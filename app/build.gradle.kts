@@ -68,6 +68,9 @@ dependencies {
     // ICONS
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.material.icons.core)
+
+    // GOOGLE SIGN IN
+    implementation(libs.play.services.auth)
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {

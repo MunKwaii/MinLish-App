@@ -23,4 +23,23 @@ class UserRepositoryImpl(private val userDao: UserDao) : UserRepository {
             Result.failure(e)
         }
     }
+
+    override suspend fun loginWithGoogle(email: String, name: String): Result<User> = withContext(Dispatchers.IO) {
+        try {
+            val existing = userDao.getUserByEmail(email)
+            if (existing != null) {
+                Result.success(existing)
+            } else {
+                val newUser = User(
+                    email = email,
+                    name = name,
+                    passwordHash = "" // Không dùng mật khẩu khi đăng nhập bằng Google
+                )
+                val id = userDao.insertUser(newUser)
+                Result.success(newUser.copy(userId = id.toInt()))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

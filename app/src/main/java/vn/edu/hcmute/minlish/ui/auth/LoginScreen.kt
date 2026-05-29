@@ -22,6 +22,15 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.platform.LocalContext
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,7 +43,38 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
     val uiState by authViewModel.uiState.collectAsState()
+
+    // Cấu hình Google Sign-In
+    val gso = remember {
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken("710966620041-dbpou1jis4h9ucihsi6kpcc8da8sp18i.apps.googleusercontent.com") // Web Client ID
+            .requestEmail()
+            .build()
+    }
+    val googleSignInClient = remember {
+        GoogleSignIn.getClient(context, gso)
+    }
+
+    // Xóa bộ nhớ đệm Google Sign-In khi vào màn hình Đăng nhập để lần sau người dùng có thể chọn tài khoản khác
+    LaunchedEffect(Unit) {
+        googleSignInClient.signOut()
+    }
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            val userEmail = account?.email ?: ""
+            val displayName = account?.displayName ?: "Google User"
+            authViewModel.loginWithGoogle(userEmail, displayName)
+        } catch (e: ApiException) {
+            authViewModel.clearError()
+        }
+    }
 
     // Điều hướng khi đăng nhập thành công
     LaunchedEffect(uiState) {
@@ -194,6 +234,54 @@ fun LoginScreen(
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Đường gạch ngang "Hoặc"
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE0E0E0))
+                        Text(
+                            text = " hoặc ",
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE0E0E0))
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Nút Đăng nhập bằng Google
+                    OutlinedButton(
+                        onClick = {
+                            val signInIntent = googleSignInClient.signInIntent
+                            googleSignInLauncher.launch(signInIntent)
+                        },
+                        enabled = uiState !is AuthUiState.Loading,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White),
+                        border = BorderStroke(1.dp, Color(0xFFDADCE0)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            GoogleLogoIcon(modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Tiếp tục với Google",
+                                color = Color(0xFF3C4043),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
                 }
             }
 
@@ -223,5 +311,83 @@ fun LoginScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun GoogleLogoIcon(modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val size = size.minDimension
+        val r = size / 2f
+        
+        // Top Red
+        val pathRed = Path().apply {
+            moveTo(r, r)
+            lineTo(r - r * 0.707f, r - r * 0.707f)
+            arcTo(
+                rect = androidx.compose.ui.geometry.Rect(0f, 0f, size, size),
+                startAngleDegrees = 225f,
+                sweepAngleDegrees = 90f,
+                forceMoveTo = false
+            )
+            close()
+        }
+        drawPath(pathRed, Color(0xFFEA4335))
+        
+        // Left Yellow
+        val pathYellow = Path().apply {
+            moveTo(r, r)
+            lineTo(r - r * 0.707f, r + r * 0.707f)
+            arcTo(
+                rect = androidx.compose.ui.geometry.Rect(0f, 0f, size, size),
+                startAngleDegrees = 135f,
+                sweepAngleDegrees = 90f,
+                forceMoveTo = false
+            )
+            close()
+        }
+        drawPath(pathYellow, Color(0xFFFBBC05))
+
+        // Bottom Green
+        val pathGreen = Path().apply {
+            moveTo(r, r)
+            lineTo(r + r * 0.707f, r + r * 0.707f)
+            arcTo(
+                rect = androidx.compose.ui.geometry.Rect(0f, 0f, size, size),
+                startAngleDegrees = 45f,
+                sweepAngleDegrees = 90f,
+                forceMoveTo = false
+            )
+            close()
+        }
+        drawPath(pathGreen, Color(0xFF34A853))
+
+        // Right Blue (including the horizontal bar)
+        val pathBlue = Path().apply {
+            moveTo(r, r)
+            lineTo(r + r * 0.707f, r - r * 0.707f)
+            arcTo(
+                rect = androidx.compose.ui.geometry.Rect(0f, 0f, size, size),
+                startAngleDegrees = -45f,
+                sweepAngleDegrees = 90f,
+                forceMoveTo = false
+            )
+            close()
+        }
+        drawPath(pathBlue, Color(0xFF4285F4))
+        
+        // Draw the inner white/cutout circle
+        drawCircle(Color.White, radius = r * 0.65f)
+        
+        // Draw the blue bar
+        val barWidth = r * 0.35f
+        val barPath = Path().apply {
+            moveTo(r, r - barWidth / 2)
+            lineTo(r * 1.85f, r - barWidth / 2)
+            lineTo(r * 1.85f, r + barWidth / 2)
+            lineTo(r, r + barWidth / 2)
+            close()
+        }
+        drawPath(barPath, Color(0xFF4285F4))
     }
 }

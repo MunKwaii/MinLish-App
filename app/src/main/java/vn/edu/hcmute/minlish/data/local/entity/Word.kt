@@ -19,18 +19,13 @@ data class Word(
     @PrimaryKey(autoGenerate = true)
     val wordId: Int = 0,
     val deckId: Int,
-
+    
     val word: String,
     val pronunciation: String,
     val meaning: String,
-    val description: String?,
-    val example: String?,
-    val collocations: String?,
-    val relatedWords: String?,
-    val note: String?,
-
-    // Thuật toán Spaced Repetition (SRS)
-    val nextReviewTime: Long = 0L,
-    val easeFactor: Float = 2.5f,
-    val interval: Int = 0
+    val description: String? = null,
+    val example: String? = null,
+    val collocations: String? = null,
+    val relatedWords: String? = null,
+    val note: String? = null
 )

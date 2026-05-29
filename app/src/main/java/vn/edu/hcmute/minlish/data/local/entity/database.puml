@@ -1,0 +1,75 @@
+@startuml
+!theme plain
+hide circle
+skinparam linetype ortho
+skinparam roundcorner 5
+skinparam class {
+    BackgroundColor White
+    BorderColor #1A73E8
+    ArrowColor #1A73E8
+}
+
+entity "users" as users {
+    * **userId** : INTEGER [PK]
+    --
+    * email : TEXT
+    * name : TEXT
+    * passwordHash : TEXT
+    * learningGoal : TEXT
+    * level : TEXT
+    * totalWordsLearned : INTEGER
+    * currentStreak : INTEGER
+    * accuracyRate : REAL (Float)
+}
+
+entity "decks" as decks {
+    * **deckId** : INTEGER [PK]
+    --
+    * userId : INTEGER [FK -> users.userId]
+    * name : TEXT
+    * description : TEXT
+    * tags : TEXT
+}
+
+entity "words" as words {
+    * **wordId** : INTEGER [PK]
+    --
+    * deckId : INTEGER [FK -> decks.deckId]
+    * word : TEXT
+    * pronunciation : TEXT
+    * meaning : TEXT
+    description : TEXT (nullable)
+    example : TEXT (nullable)
+    collocations : TEXT (nullable)
+    relatedWords : TEXT (nullable)
+    note : TEXT (nullable)
+}
+
+entity "flashcard_progress" as flashcard_progress {
+    * **progressId** : INTEGER [PK]
+    --
+    * userId : INTEGER [FK -> users.userId]
+    * wordId : INTEGER [FK -> words.wordId]
+    * easeFactor : REAL (Float)
+    * interval : INTEGER
+    * nextReviewTime : INTEGER (Long)
+}
+
+entity "study_progress" as study_progress {
+    * **progressId** : INTEGER [PK]
+    --
+    * userId : INTEGER [FK -> users.userId]
+    * date : TEXT
+    * newWordsLearned : INTEGER
+    * wordsReviewed : INTEGER
+    * correctAnswers : INTEGER
+    * totalAnswers : INTEGER
+}
+
+' Mối quan hệ giữa các bảng
+users ||--o{ decks : "creates"
+users ||--o{ study_progress : "tracks"
+users ||--o{ flashcard_progress : "has"
+decks ||--o{ words : "contains"
+words ||--o{ flashcard_progress : "records"
+@enduml

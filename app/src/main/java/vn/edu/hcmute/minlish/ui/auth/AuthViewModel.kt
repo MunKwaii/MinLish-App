@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import vn.edu.hcmute.minlish.data.local.entity.User
 import vn.edu.hcmute.minlish.data.repository.UserRepository
+import vn.edu.hcmute.minlish.data.util.EmailSender
 
 sealed interface AuthUiState {
     object Idle : AuthUiState
@@ -24,6 +25,15 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
 
     private val _currentUser = MutableStateFlow<User?>(null)
     val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
+
+    private val _showOtpScreen = MutableStateFlow(false)
+    val showOtpScreen: StateFlow<Boolean> = _showOtpScreen.asStateFlow()
+
+    private val _generatedOtp = MutableStateFlow<String?>(null)
+    val generatedOtp: StateFlow<String?> = _generatedOtp.asStateFlow()
+
+    private var tempUser: User? = null
+    private var otpExpiryTime = 0L
 
     fun login(email: String, passwordHash: String) {
         if (email.isBlank() || passwordHash.isBlank()) {
@@ -85,18 +95,69 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
         _uiState.value = AuthUiState.Loading
         viewModelScope.launch {
             try {
-                val newUser = User(
-                    email = email,
-                    name = name,
-                    passwordHash = passwordHash,
-                    learningGoal = learningGoal,
-                    level = level
-                )
-                val result = userRepository.registerUser(newUser)
+                val existing = userRepository.getUserByEmail(email)
+                if (existing != null) {
+                    _uiState.value = AuthUiState.Error("Email đã tồn tại trong hệ thống!")
+                } else {
+                    tempUser = User(
+                        email = email,
+                        name = name,
+                        passwordHash = passwordHash,
+                        learningGoal = learningGoal,
+                        level = level
+                    )
+                    val otp = generateRandomOtp()
+                    
+                    // Gửi email thật chứa mã OTP
+                    val emailResult = EmailSender.sendOtpEmail(email, otp)
+                    emailResult.onSuccess {
+                        _generatedOtp.value = otp
+                        otpExpiryTime = System.currentTimeMillis() + 120_000
+                        _showOtpScreen.value = true
+                        _uiState.value = AuthUiState.Idle
+                    }.onFailure { exception ->
+                        _uiState.value = AuthUiState.Error("Không gửi được email xác thực: ${exception.localizedMessage}")
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.value = AuthUiState.Error(e.localizedMessage ?: "Đã xảy ra lỗi hệ thống")
+            }
+        }
+    }
+
+    fun verifyOtp(enteredOtp: String) {
+        if (enteredOtp.length != 6) {
+            _uiState.value = AuthUiState.Error("Mã OTP phải có đúng 6 chữ số!")
+            return
+        }
+
+        if (System.currentTimeMillis() > otpExpiryTime) {
+            _uiState.value = AuthUiState.Error("Mã OTP đã hết hạn! Vui lòng gửi lại mã mới.")
+            return
+        }
+
+        if (enteredOtp != _generatedOtp.value) {
+            _uiState.value = AuthUiState.Error("Mã OTP nhập vào không chính xác!")
+            return
+        }
+
+        val userToRegister = tempUser
+        if (userToRegister == null) {
+            _uiState.value = AuthUiState.Error("Không tìm thấy thông tin đăng ký!")
+            return
+        }
+
+        _uiState.value = AuthUiState.Loading
+        viewModelScope.launch {
+            try {
+                val result = userRepository.registerUser(userToRegister)
                 result.onSuccess { id ->
-                    val registeredUser = newUser.copy(userId = id.toInt())
+                    val registeredUser = userToRegister.copy(userId = id.toInt())
                     _currentUser.value = registeredUser
                     _uiState.value = AuthUiState.Success(registeredUser)
+                    _showOtpScreen.value = false
+                    _generatedOtp.value = null
+                    tempUser = null
                 }
                 result.onFailure { exception ->
                     _uiState.value = AuthUiState.Error(exception.message ?: "Đăng ký thất bại!")
@@ -105,6 +166,38 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
                 _uiState.value = AuthUiState.Error(e.localizedMessage ?: "Đã xảy ra lỗi hệ thống")
             }
         }
+    }
+
+    fun resendOtp() {
+        if (tempUser == null) {
+            _uiState.value = AuthUiState.Error("Không tìm thấy thông tin đăng ký để gửi lại mã!")
+            return
+        }
+        
+        _uiState.value = AuthUiState.Loading
+        viewModelScope.launch {
+            val email = tempUser?.email ?: ""
+            val otp = generateRandomOtp()
+            val emailResult = EmailSender.sendOtpEmail(email, otp)
+            emailResult.onSuccess {
+                _generatedOtp.value = otp
+                otpExpiryTime = System.currentTimeMillis() + 120_000
+                _uiState.value = AuthUiState.Idle
+            }.onFailure { exception ->
+                _uiState.value = AuthUiState.Error("Không gửi lại được mã OTP: ${exception.localizedMessage}")
+            }
+        }
+    }
+
+    fun cancelRegistration() {
+        _showOtpScreen.value = false
+        _generatedOtp.value = null
+        tempUser = null
+        _uiState.value = AuthUiState.Idle
+    }
+
+    private fun generateRandomOtp(): String {
+        return (1..6).map { ('0'..'9').random() }.joinToString("")
     }
 
     fun logout() {

@@ -1,8 +1,21 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)                // plugin Ksp để biên dịch Room
 }
+
+val localProperties = Properties()
+val localPropertiesFile = project.rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    val fis = FileInputStream(localPropertiesFile)
+    localProperties.load(fis)
+    fis.close()
+}
+val smtpEmail = localProperties.getProperty("SMTP_EMAIL") ?: ""
+val smtpPassword = localProperties.getProperty("SMTP_PASSWORD") ?: ""
 
 android {
     namespace = "vn.edu.hcmute.minlish"
@@ -20,6 +33,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "SMTP_EMAIL", "\"$smtpEmail\"")
+        buildConfigField("String", "SMTP_PASSWORD", "\"$smtpPassword\"")
     }
 
     buildTypes {
@@ -37,6 +53,16 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+    packaging {
+        resources {
+            excludes += "META-INF/NOTICE.md"
+            excludes += "META-INF/LICENSE.md"
+            excludes += "META-INF/LICENSE-spec.html"
+            excludes += "META-INF/mailcap.default"
+            excludes += "META-INF/mimetypes.default"
+        }
     }
 }
 
@@ -71,6 +97,10 @@ dependencies {
 
     // GOOGLE SIGN IN
     implementation(libs.play.services.auth)
+
+    // JAVAMAIL FOR ANDROID (SMTP EMAIL SENDING)
+    implementation("com.sun.mail:android-mail:1.6.7")
+    implementation("com.sun.mail:android-activation:1.6.7")
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {

@@ -57,6 +57,11 @@ fun LoginScreen(
         GoogleSignIn.getClient(context, gso)
     }
 
+    // Xóa bộ nhớ đệm Google Sign-In khi vào màn hình Đăng nhập để lần sau người dùng có thể chọn tài khoản khác
+    LaunchedEffect(Unit) {
+        googleSignInClient.signOut()
+    }
+
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->

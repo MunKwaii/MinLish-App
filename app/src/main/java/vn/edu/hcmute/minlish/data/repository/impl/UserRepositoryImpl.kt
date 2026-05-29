@@ -1,9 +1,10 @@
-package vn.edu.hcmute.minlish.data.repository
+package vn.edu.hcmute.minlish.data.repository.impl
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import vn.edu.hcmute.minlish.data.local.dao.UserDao
 import vn.edu.hcmute.minlish.data.local.entity.User
+import vn.edu.hcmute.minlish.data.repository.UserRepository
 
 class UserRepositoryImpl(private val userDao: UserDao) : UserRepository {
     override suspend fun getUserByEmail(email: String): User? = withContext(Dispatchers.IO) {

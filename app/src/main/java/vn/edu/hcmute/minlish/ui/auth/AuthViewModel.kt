@@ -45,14 +45,23 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
         viewModelScope.launch {
             try {
                 val user = userRepository.getUserByEmail(email)
-                if (user != null && user.passwordHash == passwordHash) {
-                    _currentUser.value = user
-                    _uiState.value = AuthUiState.Success(user)
+                if (user != null) {
+                    if (user.passwordHash == passwordHash) {
+                        _currentUser.value = user
+                        _uiState.value = AuthUiState.Success(user)
+                    } else {
+                        _uiState.value = AuthUiState.Error("Email hoặc mật khẩu không chính xác!")
+                    }
                 } else {
                     _uiState.value = AuthUiState.Error("Email hoặc mật khẩu không chính xác!")
                 }
             } catch (e: Exception) {
-                _uiState.value = AuthUiState.Error(e.localizedMessage ?: "Đã xảy ra lỗi hệ thống")
+                val errMsg = e.localizedMessage
+                if (errMsg != null) {
+                    _uiState.value = AuthUiState.Error(errMsg)
+                } else {
+                    _uiState.value = AuthUiState.Error("Đã xảy ra lỗi hệ thống")
+                }
             }
         }
     }
@@ -67,15 +76,30 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
         viewModelScope.launch {
             try {
                 val result = userRepository.loginWithGoogle(email, name)
-                result.onSuccess { user ->
-                    _currentUser.value = user
-                    _uiState.value = AuthUiState.Success(user)
-                }
-                result.onFailure { exception ->
-                    _uiState.value = AuthUiState.Error(exception.message ?: "Đăng nhập Google thất bại!")
+                if (result.isSuccess) {
+                    val user = result.getOrNull()
+                    if (user != null) {
+                        _currentUser.value = user
+                        _uiState.value = AuthUiState.Success(user)
+                    } else {
+                        _uiState.value = AuthUiState.Error("Đăng nhập Google thất bại!")
+                    }
+                } else {
+                    val exception = result.exceptionOrNull()
+                    val msg = exception?.message
+                    if (msg != null) {
+                        _uiState.value = AuthUiState.Error(msg)
+                    } else {
+                        _uiState.value = AuthUiState.Error("Đăng nhập Google thất bại!")
+                    }
                 }
             } catch (e: Exception) {
-                _uiState.value = AuthUiState.Error(e.localizedMessage ?: "Đã xảy ra lỗi hệ thống")
+                val errMsg = e.localizedMessage
+                if (errMsg != null) {
+                    _uiState.value = AuthUiState.Error(errMsg)
+                } else {
+                    _uiState.value = AuthUiState.Error("Đã xảy ra lỗi hệ thống")
+                }
             }
         }
     }
@@ -99,28 +123,40 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
                 if (existing != null) {
                     _uiState.value = AuthUiState.Error("Email đã tồn tại trong hệ thống!")
                 } else {
-                    tempUser = User(
+                    val userToSave = User(
                         email = email,
                         name = name,
                         passwordHash = passwordHash,
                         learningGoal = learningGoal,
                         level = level
                     )
+                    tempUser = userToSave
                     val otp = generateRandomOtp()
                     
                     // Gửi email thật chứa mã OTP
                     val emailResult = EmailSender.sendOtpEmail(email, otp)
-                    emailResult.onSuccess {
+                    if (emailResult.isSuccess) {
                         _generatedOtp.value = otp
                         otpExpiryTime = System.currentTimeMillis() + 120_000
                         _showOtpScreen.value = true
                         _uiState.value = AuthUiState.Idle
-                    }.onFailure { exception ->
-                        _uiState.value = AuthUiState.Error("Không gửi được email xác thực: ${exception.localizedMessage}")
+                    } else {
+                        val exception = emailResult.exceptionOrNull()
+                        val msg = exception?.localizedMessage
+                        if (msg != null) {
+                            _uiState.value = AuthUiState.Error("Không gửi được email xác thực: " + msg)
+                        } else {
+                            _uiState.value = AuthUiState.Error("Không gửi được email xác thực!")
+                        }
                     }
                 }
             } catch (e: Exception) {
-                _uiState.value = AuthUiState.Error(e.localizedMessage ?: "Đã xảy ra lỗi hệ thống")
+                val errMsg = e.localizedMessage
+                if (errMsg != null) {
+                    _uiState.value = AuthUiState.Error(errMsg)
+                } else {
+                    _uiState.value = AuthUiState.Error("Đã xảy ra lỗi hệ thống")
+                }
             }
         }
     }
@@ -131,12 +167,14 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
             return
         }
 
-        if (System.currentTimeMillis() > otpExpiryTime) {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime > otpExpiryTime) {
             _uiState.value = AuthUiState.Error("Mã OTP đã hết hạn! Vui lòng gửi lại mã mới.")
             return
         }
 
-        if (enteredOtp != _generatedOtp.value) {
+        val expectedOtp = _generatedOtp.value
+        if (enteredOtp != expectedOtp) {
             _uiState.value = AuthUiState.Error("Mã OTP nhập vào không chính xác!")
             return
         }
@@ -151,40 +189,62 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
         viewModelScope.launch {
             try {
                 val result = userRepository.registerUser(userToRegister)
-                result.onSuccess { id ->
-                    val registeredUser = userToRegister.copy(userId = id.toInt())
-                    _currentUser.value = registeredUser
-                    _uiState.value = AuthUiState.Success(registeredUser)
-                    _showOtpScreen.value = false
-                    _generatedOtp.value = null
-                    tempUser = null
-                }
-                result.onFailure { exception ->
-                    _uiState.value = AuthUiState.Error(exception.message ?: "Đăng ký thất bại!")
+                if (result.isSuccess) {
+                    val id = result.getOrNull()
+                    if (id != null) {
+                        val registeredUser = userToRegister.copy(userId = id.toInt())
+                        _currentUser.value = registeredUser
+                        _uiState.value = AuthUiState.Success(registeredUser)
+                        _showOtpScreen.value = false
+                        _generatedOtp.value = null
+                        tempUser = null
+                    } else {
+                        _uiState.value = AuthUiState.Error("Đăng ký thất bại!")
+                    }
+                } else {
+                    val exception = result.exceptionOrNull()
+                    val msg = exception?.message
+                    if (msg != null) {
+                        _uiState.value = AuthUiState.Error(msg)
+                    } else {
+                        _uiState.value = AuthUiState.Error("Đăng ký thất bại!")
+                    }
                 }
             } catch (e: Exception) {
-                _uiState.value = AuthUiState.Error(e.localizedMessage ?: "Đã xảy ra lỗi hệ thống")
+                val errMsg = e.localizedMessage
+                if (errMsg != null) {
+                    _uiState.value = AuthUiState.Error(errMsg)
+                } else {
+                    _uiState.value = AuthUiState.Error("Đã xảy ra lỗi hệ thống")
+                }
             }
         }
     }
 
     fun resendOtp() {
-        if (tempUser == null) {
+        val user = tempUser
+        if (user == null) {
             _uiState.value = AuthUiState.Error("Không tìm thấy thông tin đăng ký để gửi lại mã!")
             return
         }
         
         _uiState.value = AuthUiState.Loading
         viewModelScope.launch {
-            val email = tempUser?.email ?: ""
+            val email = user.email
             val otp = generateRandomOtp()
             val emailResult = EmailSender.sendOtpEmail(email, otp)
-            emailResult.onSuccess {
+            if (emailResult.isSuccess) {
                 _generatedOtp.value = otp
                 otpExpiryTime = System.currentTimeMillis() + 120_000
                 _uiState.value = AuthUiState.Idle
-            }.onFailure { exception ->
-                _uiState.value = AuthUiState.Error("Không gửi lại được mã OTP: ${exception.localizedMessage}")
+            } else {
+                val exception = emailResult.exceptionOrNull()
+                val msg = exception?.localizedMessage
+                if (msg != null) {
+                    _uiState.value = AuthUiState.Error("Không gửi lại được mã OTP: " + msg)
+                } else {
+                    _uiState.value = AuthUiState.Error("Không gửi lại được mã OTP!")
+                }
             }
         }
     }
@@ -197,7 +257,12 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
     }
 
     private fun generateRandomOtp(): String {
-        return (1..6).map { ('0'..'9').random() }.joinToString("")
+        var otp = ""
+        for (i in 1..6) {
+            val randomDigit = ('0'..'9').random()
+            otp = otp + randomDigit
+        }
+        return otp
     }
 
     fun logout() {
@@ -216,8 +281,10 @@ class AuthViewModelFactory(private val userRepository: UserRepository) : ViewMod
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return AuthViewModel(userRepository) as T
+            val factoryResult = AuthViewModel(userRepository) as T
+            return factoryResult
+        } else {
+            throw IllegalArgumentException("Unknown ViewModel class")
         }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

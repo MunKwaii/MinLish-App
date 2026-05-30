@@ -252,7 +252,6 @@ fun RegisterScreen(
                             }
                         }
 
-
                         Spacer(modifier = Modifier.height(24.dp))
 
                         // Error message if any
@@ -333,8 +332,8 @@ fun RegisterScreen(
                         // Ô nhập Họ và Tên
                         OutlinedTextField(
                             value = name,
-                            onValueChange = { 
-                                name = it
+                            onValueChange = { textVal ->
+                                name = textVal
                                 authViewModel.clearError()
                             },
                             label = { Text("Họ và tên") },
@@ -355,8 +354,8 @@ fun RegisterScreen(
                         // Ô nhập Email
                         OutlinedTextField(
                             value = email,
-                            onValueChange = { 
-                                email = it
+                            onValueChange = { textVal ->
+                                email = textVal
                                 authViewModel.clearError()
                             },
                             label = { Text("Email") },
@@ -376,10 +375,22 @@ fun RegisterScreen(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         // Ô nhập Mật khẩu
+                        val visualTransformation = if (passwordVisible) {
+                            VisualTransformation.None
+                        } else {
+                            PasswordVisualTransformation()
+                        }
+
+                        val passwordIcon = if (passwordVisible) {
+                            Icons.Filled.Visibility
+                        } else {
+                            Icons.Filled.VisibilityOff
+                        }
+
                         OutlinedTextField(
                             value = password,
-                            onValueChange = { 
-                                password = it
+                            onValueChange = { textVal ->
+                                password = textVal
                                 authViewModel.clearError()
                             },
                             label = { Text("Mật khẩu") },
@@ -391,15 +402,11 @@ fun RegisterScreen(
                                 )
                             },
                             trailingIcon = {
-                                val image = if (passwordVisible)
-                                    Icons.Filled.Visibility
-                                else Icons.Filled.VisibilityOff
-
                                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                    Icon(imageVector = image, contentDescription = "Toggle password visibility")
+                                    Icon(imageVector = passwordIcon, contentDescription = "Toggle password visibility")
                                 }
                             },
-                            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            visualTransformation = visualTransformation,
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                             shape = RoundedCornerShape(12.dp),
@@ -542,6 +549,5 @@ fun RegisterScreen(
                 }
             }
         }
-
     }
 }

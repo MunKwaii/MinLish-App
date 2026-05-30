@@ -30,16 +30,20 @@ abstract class MinlishDatabase : RoomDatabase() {
         private var INSTANCE: MinlishDatabase? = null
 
         fun getDatabase(context: Context): MinlishDatabase {
-            return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
+            val currentInstance = INSTANCE
+            if (currentInstance != null) {
+                return currentInstance
+            }
+            synchronized(this) {
+                val db = Room.databaseBuilder(
                     context.applicationContext,
                     MinlishDatabase::class.java,
                     "minlish_database"
                 )
                 .fallbackToDestructiveMigration()
                 .build()
-                INSTANCE = instance
-                instance
+                INSTANCE = db
+                return db
             }
         }
     }

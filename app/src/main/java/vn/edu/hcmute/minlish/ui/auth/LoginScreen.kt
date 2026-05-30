@@ -143,8 +143,8 @@ fun LoginScreen(
                     // Ô nhập Email
                     OutlinedTextField(
                         value = email,
-                        onValueChange = { 
-                            email = it
+                        onValueChange = { textVal ->
+                            email = textVal
                             authViewModel.clearError()
                         },
                         label = { Text("Email") },
@@ -164,10 +164,22 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Ô nhập Mật khẩu
+                    val visualTransformation = if (passwordVisible) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    }
+
+                    val passwordIcon = if (passwordVisible) {
+                        Icons.Filled.Visibility
+                    } else {
+                        Icons.Filled.VisibilityOff
+                    }
+
                     OutlinedTextField(
                         value = password,
-                        onValueChange = { 
-                            password = it
+                        onValueChange = { textVal ->
+                            password = textVal
                             authViewModel.clearError()
                         },
                         label = { Text("Mật khẩu") },
@@ -179,15 +191,11 @@ fun LoginScreen(
                             )
                         },
                         trailingIcon = {
-                            val image = if (passwordVisible)
-                                Icons.Filled.Visibility
-                            else Icons.Filled.VisibilityOff
-
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(imageVector = image, contentDescription = "Toggle password visibility")
+                                Icon(imageVector = passwordIcon, contentDescription = "Toggle password visibility")
                             }
                         },
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        visualTransformation = visualTransformation,
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         shape = RoundedCornerShape(12.dp),
@@ -321,59 +329,55 @@ fun GoogleLogoIcon(modifier: Modifier = Modifier) {
         val r = size / 2f
         
         // Top Red
-        val pathRed = Path().apply {
-            moveTo(r, r)
-            lineTo(r - r * 0.707f, r - r * 0.707f)
-            arcTo(
-                rect = androidx.compose.ui.geometry.Rect(0f, 0f, size, size),
-                startAngleDegrees = 225f,
-                sweepAngleDegrees = 90f,
-                forceMoveTo = false
-            )
-            close()
-        }
+        val pathRed = Path()
+        pathRed.moveTo(r, r)
+        pathRed.lineTo(r - r * 0.707f, r - r * 0.707f)
+        pathRed.arcTo(
+            rect = androidx.compose.ui.geometry.Rect(0f, 0f, size, size),
+            startAngleDegrees = 225f,
+            sweepAngleDegrees = 90f,
+            forceMoveTo = false
+        )
+        pathRed.close()
         drawPath(pathRed, Color(0xFFEA4335))
         
         // Left Yellow
-        val pathYellow = Path().apply {
-            moveTo(r, r)
-            lineTo(r - r * 0.707f, r + r * 0.707f)
-            arcTo(
-                rect = androidx.compose.ui.geometry.Rect(0f, 0f, size, size),
-                startAngleDegrees = 135f,
-                sweepAngleDegrees = 90f,
-                forceMoveTo = false
-            )
-            close()
-        }
+        val pathYellow = Path()
+        pathYellow.moveTo(r, r)
+        pathYellow.lineTo(r - r * 0.707f, r + r * 0.707f)
+        pathYellow.arcTo(
+            rect = androidx.compose.ui.geometry.Rect(0f, 0f, size, size),
+            startAngleDegrees = 135f,
+            sweepAngleDegrees = 90f,
+            forceMoveTo = false
+        )
+        pathYellow.close()
         drawPath(pathYellow, Color(0xFFFBBC05))
 
         // Bottom Green
-        val pathGreen = Path().apply {
-            moveTo(r, r)
-            lineTo(r + r * 0.707f, r + r * 0.707f)
-            arcTo(
-                rect = androidx.compose.ui.geometry.Rect(0f, 0f, size, size),
-                startAngleDegrees = 45f,
-                sweepAngleDegrees = 90f,
-                forceMoveTo = false
-            )
-            close()
-        }
+        val pathGreen = Path()
+        pathGreen.moveTo(r, r)
+        pathGreen.lineTo(r + r * 0.707f, r + r * 0.707f)
+        pathGreen.arcTo(
+            rect = androidx.compose.ui.geometry.Rect(0f, 0f, size, size),
+            startAngleDegrees = 45f,
+            sweepAngleDegrees = 90f,
+            forceMoveTo = false
+        )
+        pathGreen.close()
         drawPath(pathGreen, Color(0xFF34A853))
 
         // Right Blue (including the horizontal bar)
-        val pathBlue = Path().apply {
-            moveTo(r, r)
-            lineTo(r + r * 0.707f, r - r * 0.707f)
-            arcTo(
-                rect = androidx.compose.ui.geometry.Rect(0f, 0f, size, size),
-                startAngleDegrees = -45f,
-                sweepAngleDegrees = 90f,
-                forceMoveTo = false
-            )
-            close()
-        }
+        val pathBlue = Path()
+        pathBlue.moveTo(r, r)
+        pathBlue.lineTo(r + r * 0.707f, r - r * 0.707f)
+        pathBlue.arcTo(
+            rect = androidx.compose.ui.geometry.Rect(0f, 0f, size, size),
+            startAngleDegrees = -45f,
+            sweepAngleDegrees = 90f,
+            forceMoveTo = false
+        )
+        pathBlue.close()
         drawPath(pathBlue, Color(0xFF4285F4))
         
         // Draw the inner white/cutout circle
@@ -381,13 +385,12 @@ fun GoogleLogoIcon(modifier: Modifier = Modifier) {
         
         // Draw the blue bar
         val barWidth = r * 0.35f
-        val barPath = Path().apply {
-            moveTo(r, r - barWidth / 2)
-            lineTo(r * 1.85f, r - barWidth / 2)
-            lineTo(r * 1.85f, r + barWidth / 2)
-            lineTo(r, r + barWidth / 2)
-            close()
-        }
+        val barPath = Path()
+        barPath.moveTo(r, r - barWidth / 2)
+        barPath.lineTo(r * 1.85f, r - barWidth / 2)
+        barPath.lineTo(r * 1.85f, r + barWidth / 2)
+        barPath.lineTo(r, r + barWidth / 2)
+        barPath.close()
         drawPath(barPath, Color(0xFF4285F4))
     }
 }

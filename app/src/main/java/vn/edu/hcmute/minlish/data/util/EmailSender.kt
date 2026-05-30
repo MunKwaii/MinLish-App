@@ -20,52 +20,53 @@ object EmailSender {
             val smtpPassword = BuildConfig.SMTP_PASSWORD
 
             if (smtpEmail.isBlank() || smtpPassword.isBlank()) {
-                return@withContext Result.failure(Exception("Chưa cấu hình tài khoản SMTP gửi mail trong local.properties!"))
+                val errorException = Exception("Chưa cấu hình tài khoản SMTP gửi mail trong local.properties!")
+                return@withContext Result.failure(errorException)
             }
 
-            val props = Properties().apply {
-                put("mail.smtp.host", "smtp.gmail.com")
-                put("mail.smtp.socketFactory.port", "465")
-                put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory")
-                put("mail.smtp.auth", "true")
-                put("mail.smtp.port", "465")
-            }
+            val props = Properties()
+            props.put("mail.smtp.host", "smtp.gmail.com")
+            props.put("mail.smtp.socketFactory.port", "465")
+            props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory")
+            props.put("mail.smtp.auth", "true")
+            props.put("mail.smtp.port", "465")
 
             try {
-                val session = Session.getInstance(props, object : Authenticator() {
+                val authenticator = object : Authenticator() {
                     override fun getPasswordAuthentication(): PasswordAuthentication {
-                        return PasswordAuthentication(smtpEmail, smtpPassword)
+                        val auth = PasswordAuthentication(smtpEmail, smtpPassword)
+                        return auth
                     }
-                })
-
-                val message = MimeMessage(session).apply {
-                    setFrom(InternetAddress(smtpEmail, "MinLish App"))
-                    setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail))
-                    subject = "Mã xác thực đăng ký tài khoản MinLish"
-                    
-                    val emailContent = """
-                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; background-color: #f9f9f9;">
-                            <h2 style="color: #2e7d32; text-align: center;">MinLish - Ứng dụng Học Tiếng Anh</h2>
-                            <hr style="border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;">
-                            <p style="font-size: 16px; color: #333;">Xin chào,</p>
-                            <p style="font-size: 16px; color: #333;">Bạn đang thực hiện đăng ký tài khoản trên ứng dụng MinLish. Vui lòng sử dụng mã OTP dưới đây để hoàn tất quá trình xác thực email:</p>
-                            <div style="text-align: center; margin: 30px 0;">
-                                <span style="font-size: 32px; font-weight: bold; color: #2e7d32; letter-spacing: 5px; padding: 10px 24px; border: 2px dashed #2e7d32; border-radius: 8px; background-color: #e8f5e9; display: inline-block;">$otpCode</span>
-                            </div>
-                            <p style="font-size: 14px; color: #ef5350; font-weight: bold; text-align: center;">Mã xác thực có hiệu lực trong vòng 2 phút.</p>
-                            <hr style="border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;">
-                            <p style="font-size: 12px; color: #777; text-align: center;">Đây là email được gửi tự động, vui lòng không phản hồi lại email này.</p>
-                        </div>
-                    """.trimIndent()
-                    
-                    setContent(emailContent, "text/html; charset=utf-8")
                 }
+                val session = Session.getInstance(props, authenticator)
+
+                val message = MimeMessage(session)
+                message.setFrom(InternetAddress(smtpEmail, "MinLish App"))
+                message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail))
+                message.setSubject("Mã xác thực đăng ký tài khoản MinLish")
+                
+                val emailContent = "<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; background-color: #f9f9f9;\">" +
+                        "<h2 style=\"color: #2e7d32; text-align: center;\">MinLish - Ứng dụng Học Tiếng Anh</h2>" +
+                        "<hr style=\"border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;\">" +
+                        "<p style=\"font-size: 16px; color: #333;\">Xin chào,</p>" +
+                        "<p style=\"font-size: 16px; color: #333;\">Bạn đang thực hiện đăng ký tài khoản trên ứng dụng MinLish. Vui lòng sử dụng mã OTP dưới đây để hoàn tất quá trình xác thực email:</p>" +
+                        "<div style=\"text-align: center; margin: 30px 0;\">" +
+                        "<span style=\"font-size: 32px; font-weight: bold; color: #2e7d32; letter-spacing: 5px; padding: 10px 24px; border: 2px dashed #2e7d32; border-radius: 8px; background-color: #e8f5e9; display: inline-block;\">" + otpCode + "</span>" +
+                        "</div>" +
+                        "<p style=\"font-size: 14px; color: #ef5350; font-weight: bold; text-align: center;\">Mã xác thực có hiệu lực trong vòng 2 phút.</p>" +
+                        "<hr style=\"border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;\">" +
+                        "<p style=\"font-size: 12px; color: #777; text-align: center;\">Đây là email được gửi tự động, vui lòng không phản hồi lại email này.</p>" +
+                        "</div>"
+                
+                message.setContent(emailContent, "text/html; charset=utf-8")
 
                 Transport.send(message)
-                Result.success(Unit)
+                return@withContext Result.success(Unit)
             } catch (e: Exception) {
                 e.printStackTrace()
-                Result.failure(Exception("Lỗi gửi Email SMTP: ${e.message ?: "Không rõ nguyên nhân"}"))
+                val failMessage = "Lỗi gửi Email SMTP: " + (e.message ?: "Không rõ nguyên nhân")
+                val failException = Exception(failMessage)
+                return@withContext Result.failure(failException)
             }
         }
     }

@@ -125,7 +125,8 @@ class AuthViewModel(
         name: String,
         passwordHash: String,
         learningGoal: String,
-        level: String
+        level: String,
+        userType: String
     ) {
         if (email.isBlank() || name.isBlank() || passwordHash.isBlank()) {
             _uiState.value = AuthUiState.Error("Vui lòng nhập đầy đủ email, họ tên và mật khẩu!")
@@ -144,7 +145,8 @@ class AuthViewModel(
                         name = name,
                         passwordHash = passwordHash,
                         learningGoal = learningGoal,
-                        level = level
+                        level = level,
+                        userType = userType
                     )
                     tempUser = userToSave
                     val otp = generateRandomOtp()
@@ -312,6 +314,60 @@ class AuthViewModel(
     fun logout() {
         sessionManager.clearSession()
         _currentUser.value = null
+        _uiState.value = AuthUiState.Idle
+    }
+
+    fun updateProfile(
+        name: String,
+        userType: String,
+        learningGoal: String,
+        level: String
+    ) {
+        val user = _currentUser.value
+        if (user == null) {
+            _uiState.value = AuthUiState.Error("Không tìm thấy thông tin người dùng!")
+            return
+        }
+
+        if (name.isBlank()) {
+            _uiState.value = AuthUiState.Error("Tên không được để trống!")
+            return
+        }
+
+        _uiState.value = AuthUiState.Loading
+        viewModelScope.launch {
+            try {
+                val updatedUser = user.copy(
+                    name = name,
+                    userType = userType,
+                    learningGoal = learningGoal,
+                    level = level
+                )
+                val result = userRepository.updateUser(updatedUser)
+                if (result.isSuccess) {
+                    _currentUser.value = updatedUser
+                    _uiState.value = AuthUiState.Success(updatedUser)
+                } else {
+                    val exception = result.exceptionOrNull()
+                    val msg = exception?.message
+                    if (msg != null) {
+                        _uiState.value = AuthUiState.Error(msg)
+                    } else {
+                        _uiState.value = AuthUiState.Error("Cập nhật hồ sơ thất bại!")
+                    }
+                }
+            } catch (e: Exception) {
+                val errMsg = e.localizedMessage
+                if (errMsg != null) {
+                    _uiState.value = AuthUiState.Error(errMsg)
+                } else {
+                    _uiState.value = AuthUiState.Error("Đã xảy ra lỗi hệ thống")
+                }
+            }
+        }
+    }
+
+    fun resetUiState() {
         _uiState.value = AuthUiState.Idle
     }
 

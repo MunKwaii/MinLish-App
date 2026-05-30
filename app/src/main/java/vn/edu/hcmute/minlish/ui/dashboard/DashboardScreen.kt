@@ -118,9 +118,21 @@ fun DashboardScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceAround
                         ) {
-                            InfoItem(title = "Đối tượng", value = currentUser?.userType ?: "Chưa chọn")
-                            InfoItem(title = "Mục tiêu", value = currentUser?.learningGoal ?: "Chưa chọn")
-                            InfoItem(title = "Trình độ", value = currentUser?.level ?: "Chưa chọn")
+                            InfoItem(
+                                modifier = Modifier.weight(1f),
+                                title = "Đối tượng",
+                                value = currentUser?.userType ?: "Chưa chọn"
+                            )
+                            InfoItem(
+                                modifier = Modifier.weight(1f),
+                                title = "Mục tiêu",
+                                value = currentUser?.learningGoal ?: "Chưa chọn"
+                            )
+                            InfoItem(
+                                modifier = Modifier.weight(1f),
+                                title = "Trình độ",
+                                value = currentUser?.level ?: "Chưa chọn"
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -242,11 +254,29 @@ fun DashboardScreen(
 }
 
 @Composable
-fun InfoItem(title: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = title, fontSize = 12.sp, color = Color.Gray)
+fun InfoItem(
+    modifier: Modifier = Modifier,
+    title: String,
+    value: String
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = title,
+            fontSize = 12.sp,
+            color = Color.Gray,
+            textAlign = TextAlign.Center
+        )
         Spacer(modifier = Modifier.height(4.dp))
-        Text(text = value, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF202124))
+        Text(
+            text = value,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF202124),
+            textAlign = TextAlign.Center
+        )
     }
 }
 

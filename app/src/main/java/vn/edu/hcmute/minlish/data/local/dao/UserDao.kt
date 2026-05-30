@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import vn.edu.hcmute.minlish.data.local.entity.User
 
 @Dao
@@ -13,4 +14,7 @@ interface UserDao {
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     fun insertUser(user: User): Long
+
+    @Update
+    fun updateUser(user: User)
 }

@@ -6,4 +6,5 @@ interface UserRepository {
     suspend fun getUserByEmail(email: String): User?
     suspend fun registerUser(user: User): Result<Long>
     suspend fun loginWithGoogle(email: String, name: String): Result<User>
+    suspend fun updateUser(user: User): Result<Unit>
 }

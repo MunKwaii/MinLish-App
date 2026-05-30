@@ -14,6 +14,7 @@ data class User(
     val passwordHash: String,
     val learningGoal: String = "",
     val level: String = "",
+    val userType: String = "",
 
     val totalWordsLearned: Int = 0,
     val currentStreak: Int = 0,

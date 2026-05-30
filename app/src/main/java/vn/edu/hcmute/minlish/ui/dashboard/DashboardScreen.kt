@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Timeline
@@ -27,7 +28,8 @@ import vn.edu.hcmute.minlish.ui.auth.AuthViewModel
 @Composable
 fun DashboardScreen(
     authViewModel: AuthViewModel,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onNavigateToProfile: () -> Unit
 ) {
     val currentUser by authViewModel.currentUser.collectAsState()
 
@@ -116,8 +118,33 @@ fun DashboardScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceAround
                         ) {
+                            InfoItem(title = "Đối tượng", value = currentUser?.userType ?: "Chưa chọn")
                             InfoItem(title = "Mục tiêu", value = currentUser?.learningGoal ?: "Chưa chọn")
                             InfoItem(title = "Trình độ", value = currentUser?.level ?: "Chưa chọn")
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        HorizontalDivider(color = Color(0xFFE0E0E0))
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        OutlinedButton(
+                            onClick = onNavigateToProfile,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit Profile",
+                                tint = Color(0xFF1A73E8),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Chỉnh sửa hồ sơ",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1A73E8)
+                            )
                         }
                     }
                 }

@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import vn.edu.hcmute.minlish.ui.auth.AuthViewModel
 import vn.edu.hcmute.minlish.ui.auth.LoginScreen
 import vn.edu.hcmute.minlish.ui.auth.RegisterScreen
+import vn.edu.hcmute.minlish.ui.auth.ProfileScreen
 import vn.edu.hcmute.minlish.ui.dashboard.DashboardScreen
 
 @Composable
@@ -54,6 +55,17 @@ fun NavGraph(
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Dashboard.route) { inclusive = true }
                     }
+                },
+                onNavigateToProfile = {
+                    navController.navigate(Screen.Profile.route)
+                }
+            )
+        }
+        composable(Screen.Profile.route) {
+            ProfileScreen(
+                authViewModel = authViewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }

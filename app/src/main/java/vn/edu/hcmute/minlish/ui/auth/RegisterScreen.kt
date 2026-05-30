@@ -39,12 +39,20 @@ fun RegisterScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
+    // Các lựa chọn Đối tượng người dùng
+    val userTypes = listOf(
+        "Học sinh, sinh viên",
+        "Người học IELTS / TOEIC",
+        "Người đi làm cần nâng cao từ vựng"
+    )
+    var selectedUserType by remember { mutableStateOf(userTypes[0]) }
+
     // Các lựa chọn Mục tiêu học tập
-    val goals = listOf("Giao tiếp", "IELTS/TOEIC", "Đọc tài liệu", "Du lịch")
+    val goals = listOf("IELTS", "TOEIC", "Giao tiếp", "Đọc tài liệu", "Du lịch")
     var selectedGoal by remember { mutableStateOf(goals[0]) }
 
     // Các lựa chọn Trình độ hiện tại
-    val levels = listOf("Cơ bản (A1-A2)", "Trung cấp (B1-B2)", "Nâng cao (C1-C2)")
+    val levels = listOf("A1", "A2", "B1", "B2", "C1", "C2")
     var selectedLevel by remember { mutableStateOf(levels[0]) }
 
     val uiState by authViewModel.uiState.collectAsState()
@@ -415,6 +423,35 @@ fun RegisterScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
+                        // Chọn Đối tượng người dùng
+                        Text(
+                            text = "Bạn là:",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.DarkGray,
+                            modifier = Modifier.align(Alignment.Start)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            userTypes.forEach { type ->
+                                val isSelected = selectedUserType == type
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { selectedUserType = type },
+                                    label = { Text(type) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = Color(0xFFE8F5E9),
+                                        selectedLabelColor = Color(0xFF2E7D32)
+                                    )
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
                         // Chọn Mục tiêu học tập
                         Text(
                             text = "Mục tiêu học tập của bạn:",
@@ -494,7 +531,8 @@ fun RegisterScreen(
                                     name = name.trim(),
                                     passwordHash = password,
                                     learningGoal = selectedGoal,
-                                    level = selectedLevel
+                                    level = selectedLevel,
+                                    userType = selectedUserType
                                 )
                             },
                             enabled = uiState !is AuthUiState.Loading,

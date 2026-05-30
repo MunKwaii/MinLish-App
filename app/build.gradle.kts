@@ -38,6 +38,15 @@ android {
         buildConfigField("String", "SMTP_PASSWORD", "\"$smtpPassword\"")
     }
 
+    signingConfigs {
+        create("debugShared") {
+            storeFile = file("../debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -45,6 +54,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        getByName("debug") {
+            signingConfig = signingConfigs.getByName("debugShared")
         }
     }
     compileOptions {

@@ -19,12 +19,17 @@ import vn.edu.hcmute.minlish.ui.theme.MinLishTheme
 class MainActivity : ComponentActivity() {
     
     private val authViewModel: AuthViewModel by viewModels {
-        AuthViewModelFactory((application as MinLishApplication).userRepository)
+        val app = application as MinLishApplication
+        val factory = AuthViewModelFactory(app.userRepository, app.sessionManager)
+        return@viewModels factory
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Tự động khôi phục phiên đăng nhập từ JWT Token nếu có
+        authViewModel.autoLogin()
         setContent {
             MinLishTheme {
                 val navController = rememberNavController()

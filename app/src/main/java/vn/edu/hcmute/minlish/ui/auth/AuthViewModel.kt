@@ -10,6 +10,8 @@ import kotlinx.coroutines.launch
 import vn.edu.hcmute.minlish.data.local.entity.User
 import vn.edu.hcmute.minlish.data.repository.UserRepository
 import vn.edu.hcmute.minlish.data.util.EmailSender
+import vn.edu.hcmute.minlish.data.util.JwtHelper
+import vn.edu.hcmute.minlish.data.util.SessionManager
 
 sealed interface AuthUiState {
     object Idle : AuthUiState
@@ -18,7 +20,10 @@ sealed interface AuthUiState {
     data class Error(val message: String) : AuthUiState
 }
 
-class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
+class AuthViewModel(
+    private val userRepository: UserRepository,
+    private val sessionManager: SessionManager
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
@@ -46,7 +51,16 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
             try {
                 val user = userRepository.getUserByEmail(email)
                 if (user != null) {
-                    if (user.passwordHash == passwordHash) {
+                    var isPasswordCorrect = false
+                    try {
+                        isPasswordCorrect = org.mindrot.jbcrypt.BCrypt.checkpw(passwordHash, user.passwordHash)
+                    } catch (e: Exception) {
+                        isPasswordCorrect = false
+                    }
+
+                    if (isPasswordCorrect) {
+                        val token = JwtHelper.generateToken(user.email, user.userId)
+                        sessionManager.saveToken(token)
                         _currentUser.value = user
                         _uiState.value = AuthUiState.Success(user)
                     } else {
@@ -79,6 +93,8 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
                 if (result.isSuccess) {
                     val user = result.getOrNull()
                     if (user != null) {
+                        val token = JwtHelper.generateToken(user.email, user.userId)
+                        sessionManager.saveToken(token)
                         _currentUser.value = user
                         _uiState.value = AuthUiState.Success(user)
                     } else {
@@ -193,6 +209,8 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
                     val id = result.getOrNull()
                     if (id != null) {
                         val registeredUser = userToRegister.copy(userId = id.toInt())
+                        val token = JwtHelper.generateToken(registeredUser.email, registeredUser.userId)
+                        sessionManager.saveToken(token)
                         _currentUser.value = registeredUser
                         _uiState.value = AuthUiState.Success(registeredUser)
                         _showOtpScreen.value = false
@@ -265,7 +283,34 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
         return otp
     }
 
+    fun autoLogin() {
+        val token = sessionManager.getToken()
+        if (token != null) {
+            val payload = JwtHelper.validateAndParseToken(token)
+            if (payload != null) {
+                val email = payload.optString("email")
+                if (email.isNotEmpty()) {
+                    _uiState.value = AuthUiState.Loading
+                    viewModelScope.launch {
+                        try {
+                            val user = userRepository.getUserByEmail(email)
+                            if (user != null) {
+                                _currentUser.value = user
+                                _uiState.value = AuthUiState.Success(user)
+                            } else {
+                                _uiState.value = AuthUiState.Error("Không tìm thấy thông tin tài khoản phiên đăng nhập!")
+                            }
+                        } catch (e: Exception) {
+                            _uiState.value = AuthUiState.Error("Lỗi tự động đăng nhập")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     fun logout() {
+        sessionManager.clearSession()
         _currentUser.value = null
         _uiState.value = AuthUiState.Idle
     }
@@ -277,11 +322,14 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
     }
 }
 
-class AuthViewModelFactory(private val userRepository: UserRepository) : ViewModelProvider.Factory {
+class AuthViewModelFactory(
+    private val userRepository: UserRepository,
+    private val sessionManager: SessionManager
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            val factoryResult = AuthViewModel(userRepository) as T
+            val factoryResult = AuthViewModel(userRepository, sessionManager) as T
             return factoryResult
         } else {
             throw IllegalArgumentException("Unknown ViewModel class")

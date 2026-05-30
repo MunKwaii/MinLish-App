@@ -101,6 +101,9 @@ dependencies {
     // JAVAMAIL FOR ANDROID (SMTP EMAIL SENDING)
     implementation("com.sun.mail:android-mail:1.6.7")
     implementation("com.sun.mail:android-activation:1.6.7")
+
+    // BCRYPT PASSWORD HASHING
+    implementation("org.mindrot:jbcrypt:0.4")
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {

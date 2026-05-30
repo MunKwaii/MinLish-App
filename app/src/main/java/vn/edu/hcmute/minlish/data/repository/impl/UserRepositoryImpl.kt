@@ -22,7 +22,9 @@ class UserRepositoryImpl(private val userDao: UserDao) : UserRepository {
                 if (existing != null) {
                     return@withContext Result.failure(Exception("Email đã tồn tại trong hệ thống!"))
                 } else {
-                    val id = userDao.insertUser(user)
+                    val hashedPassword = org.mindrot.jbcrypt.BCrypt.hashpw(user.passwordHash, org.mindrot.jbcrypt.BCrypt.gensalt())
+                    val securedUser = user.copy(passwordHash = hashedPassword)
+                    val id = userDao.insertUser(securedUser)
                     return@withContext Result.success(id)
                 }
             } catch (e: Exception) {

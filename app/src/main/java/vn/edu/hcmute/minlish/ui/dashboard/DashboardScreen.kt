@@ -29,7 +29,8 @@ import vn.edu.hcmute.minlish.ui.auth.AuthViewModel
 fun DashboardScreen(
     authViewModel: AuthViewModel,
     onLogout: () -> Unit,
-    onNavigateToProfile: () -> Unit
+    onNavigateToProfile: () -> Unit,
+    onNavigateToVocabulary: () -> Unit
 ) {
     val currentUser by authViewModel.currentUser.collectAsState()
 
@@ -156,6 +157,23 @@ fun DashboardScreen(
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF1A73E8)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Button(
+                            onClick = onNavigateToVocabulary,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF34A853)
+                            )
+                        ) {
+                            Text(
+                                text = "Quản lý bộ từ vựng",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
                             )
                         }
                     }

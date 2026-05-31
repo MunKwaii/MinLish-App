@@ -9,6 +9,7 @@ import vn.edu.hcmute.minlish.ui.auth.LoginScreen
 import vn.edu.hcmute.minlish.ui.auth.RegisterScreen
 import vn.edu.hcmute.minlish.ui.auth.ProfileScreen
 import vn.edu.hcmute.minlish.ui.dashboard.DashboardScreen
+import vn.edu.hcmute.minlish.ui.learning.FlashcardScreen
 
 @Composable
 fun NavGraph(
@@ -58,6 +59,9 @@ fun NavGraph(
                 },
                 onNavigateToProfile = {
                     navController.navigate(Screen.Profile.route)
+                },
+                onNavigateToLearning = {
+                    navController.navigate(Screen.Learning.route)
                 }
             )
         }
@@ -69,5 +73,13 @@ fun NavGraph(
                 }
             )
         }
+        composable(Screen.Learning.route) {
+            FlashcardScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
     }
 }
+

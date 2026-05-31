@@ -48,9 +48,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import android.speech.tts.TextToSpeech
+import java.util.Locale
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -75,6 +76,40 @@ fun FlashcardScreen(
     viewModel: LearningViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // Khởi tạo và quản lý TextToSpeech
+    val context = LocalContext.current
+    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
+    var isTtsReady by remember { mutableStateOf(false) }
+
+    DisposableEffect(context) {
+        val ttsInstance = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                isTtsReady = true
+            }
+        }
+        ttsInstance.setLanguage(Locale.US)
+        tts = ttsInstance
+
+        onDispose {
+            ttsInstance.stop()
+            ttsInstance.shutdown()
+        }
+    }
+
+    val speak = { text: String ->
+        if (isTtsReady) {
+            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+        }
+    }
+
+    // Tự động phát âm từ mới khi đổi sang thẻ khác
+    LaunchedEffect(uiState.currentIndex, isTtsReady) {
+        if (uiState.words.isNotEmpty() && !uiState.isFinished) {
+            val currentWord = uiState.words[uiState.currentIndex]
+            speak(currentWord.word)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -181,7 +216,8 @@ fun FlashcardScreen(
                         FlashcardCard(
                             word = word,
                             isFlipped = uiState.isFlipped,
-                            onCardClick = { viewModel.flipCard() }
+                            onCardClick = { viewModel.flipCard() },
+                            onSpeak = speak
                         )
                     }
                 }
@@ -212,6 +248,7 @@ fun FlashcardCard(
     word: Word,
     isFlipped: Boolean,
     onCardClick: () -> Unit,
+    onSpeak: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // animate rotation from 0f (front) to 180f (back)
@@ -239,7 +276,7 @@ fun FlashcardCard(
     ) {
         if (rotation <= 90f) {
             // FRONT OF CARD
-            CardFrontContent(word = word)
+            CardFrontContent(word = word, onSpeak = onSpeak)
         } else {
             // BACK OF CARD (Rotate 180f to avoid mirroring)
             Box(
@@ -256,7 +293,10 @@ fun FlashcardCard(
 }
 
 @Composable
-fun CardFrontContent(word: Word) {
+fun CardFrontContent(
+    word: Word,
+    onSpeak: (String) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -301,11 +341,12 @@ fun CardFrontContent(word: Word) {
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Pronunciation Badge
+            // Pronunciation Badge (Clickable for TTS sound playing)
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50.dp))
                     .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f))
+                    .clickable { onSpeak(word.word) }
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {

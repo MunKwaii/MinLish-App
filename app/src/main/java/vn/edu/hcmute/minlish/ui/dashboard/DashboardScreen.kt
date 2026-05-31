@@ -1,8 +1,10 @@
 package vn.edu.hcmute.minlish.ui.dashboard
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.shadow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Edit
@@ -29,7 +31,8 @@ import vn.edu.hcmute.minlish.ui.auth.AuthViewModel
 fun DashboardScreen(
     authViewModel: AuthViewModel,
     onLogout: () -> Unit,
-    onNavigateToProfile: () -> Unit
+    onNavigateToProfile: () -> Unit,
+    onNavigateToLearning: () -> Unit
 ) {
     val currentUser by authViewModel.currentUser.collectAsState()
 
@@ -157,6 +160,68 @@ fun DashboardScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF1A73E8)
                             )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Gradient card to launch Flashcard learning
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(8.dp, shape = RoundedCornerShape(16.dp))
+                        .clickable(onClick = onNavigateToLearning),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(
+                                        Color(0xFF1A73E8),
+                                        Color(0xFF1557B0)
+                                    )
+                                )
+                            )
+                            .padding(20.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Học Flashcard 3D",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Ghi nhớ từ vựng hiệu quả qua phương pháp lật thẻ thông minh.",
+                                    fontSize = 13.sp,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    lineHeight = 18.sp
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Button(
+                                onClick = onNavigateToLearning,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = "Học ngay",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1A73E8)
+                                )
+                            }
                         }
                     }
                 }

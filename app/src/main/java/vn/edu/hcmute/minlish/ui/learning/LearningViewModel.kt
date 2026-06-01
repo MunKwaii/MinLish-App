@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import vn.edu.hcmute.minlish.data.local.entity.FlashcardProgress
 import vn.edu.hcmute.minlish.data.local.entity.Word
 
 enum class CardDifficulty {
@@ -15,10 +16,13 @@ data class LearningUiState(
     val words: List<Word> = emptyList(),
     val currentIndex: Int = 0,
     val isFlipped: Boolean = false,
-    val isFinished: Boolean = false
+    val isFinished: Boolean = false,
+    val progressMap: Map<Int, FlashcardProgress> = emptyMap() // Lưu tiến trình học: wordId -> FlashcardProgress
 )
 
-class LearningViewModel : ViewModel() {
+class LearningViewModel(
+    private val spacedRepetitionStrategy: SpacedRepetitionStrategy = SM2Algorithm()
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LearningUiState())
     val uiState: StateFlow<LearningUiState> = _uiState.asStateFlow()
@@ -93,22 +97,57 @@ class LearningViewModel : ViewModel() {
     }
 
     fun evaluateCard(difficulty: CardDifficulty) {
-        // Trong Spaced Repetition thực tế, đánh giá này sẽ cập nhật thuật toán SuperMemo (SM-2)
-        // Hiện tại để test UI, chúng ta chỉ cần chuyển sang thẻ tiếp theo
         val currentState = _uiState.value
+        if (currentState.currentIndex >= currentState.words.size) return
+
+        val currentWord = currentState.words[currentState.currentIndex]
+
+        // 1. Quy đổi từ CardDifficulty sang điểm chất lượng SM-2 (0 đến 5)
+        val quality = when (difficulty) {
+            CardDifficulty.AGAIN -> 0 // Học lại (Sai hoàn toàn)
+            CardDifficulty.HARD -> 3  // Khó (Nhớ nhưng cần nỗ lực nhiều)
+            CardDifficulty.GOOD -> 4  // Tốt (Nhớ và trả lời nhanh)
+            CardDifficulty.EASY -> 5  // Dễ (Phản xạ ngay tức thì)
+        }
+
+        // 2. Lấy thông tin progress cũ của từ (hoặc tạo mặc định nếu chưa có)
+        val currentProgress = currentState.progressMap[currentWord.wordId] ?: FlashcardProgress(
+            userId = 1, // Tạm thời mock userId là 1
+            wordId = currentWord.wordId,
+            easeFactor = 2.5f,
+            interval = 0,
+            nextReviewTime = 0L
+        )
+
+        // 3. Sử dụng Strategy để tính toán tiến trình mới theo thuật toán SM-2
+        val newProgress = spacedRepetitionStrategy.calculateNextReview(currentProgress, quality)
+
+        // 4. In log kiểm thử toán học
+        println("SM-2 [Word: '${currentWord.word}']: Đánh giá $difficulty (Quality: $quality). EF cũ: ${currentProgress.easeFactor} -> EF mới: ${newProgress.easeFactor}. Interval cũ: ${currentProgress.interval} -> Interval mới: ${newProgress.interval} ngày.")
+
+        // 5. Cập nhật Map tiến trình học tập
+        val updatedProgressMap = currentState.progressMap.toMutableMap().apply {
+            put(currentWord.wordId, newProgress)
+        }
+
+        // 6. Chuyển sang thẻ tiếp theo
         val nextIndex = currentState.currentIndex + 1
 
         if (nextIndex < currentState.words.size) {
             _uiState.update {
                 it.copy(
                     currentIndex = nextIndex,
-                    isFlipped = false // Luôn reset trạng thái lật khi sang từ mới
+                    isFlipped = false, // Luôn reset trạng thái lật khi sang từ mới
+                    progressMap = updatedProgressMap
                 )
             }
         } else {
             // Đã học hết danh sách từ vựng hiện tại
             _uiState.update {
-                it.copy(isFinished = true)
+                it.copy(
+                    isFinished = true,
+                    progressMap = updatedProgressMap
+                )
             }
         }
     }
@@ -123,3 +162,4 @@ class LearningViewModel : ViewModel() {
         }
     }
 }
+

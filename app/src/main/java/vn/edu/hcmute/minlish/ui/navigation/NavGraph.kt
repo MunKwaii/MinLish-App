@@ -20,6 +20,7 @@ import vn.edu.hcmute.minlish.ui.auth.AuthViewModel
 import vn.edu.hcmute.minlish.ui.auth.LoginScreen
 import vn.edu.hcmute.minlish.ui.auth.ProfileScreen
 import vn.edu.hcmute.minlish.ui.auth.RegisterScreen
+import vn.edu.hcmute.minlish.ui.main.MainScreen
 import vn.edu.hcmute.minlish.ui.dashboard.DashboardScreen
 import vn.edu.hcmute.minlish.ui.dashboard.DashboardViewModel
 import vn.edu.hcmute.minlish.ui.learning.FlashcardScreen
@@ -84,9 +85,10 @@ fun NavGraph(
         }
 
         composable(Screen.Dashboard.route) {
-            DashboardScreen(
+            MainScreen(
                 authViewModel = authViewModel,
                 dashboardViewModel = dashboardViewModel,
+                vocabViewModel = vocabViewModel,
                 onLogout = {
                     authViewModel.logout()
 
@@ -96,14 +98,11 @@ fun NavGraph(
                         }
                     }
                 },
-                onNavigateToProfile = {
-                    navController.navigate(Screen.Profile.route)
-                },
                 onNavigateToLearning = {
                     navController.navigate(Screen.Learning.route)
                 },
-                onNavigateToVocabulary = {
-                    navController.navigate(Screen.Vocabulary.route)
+                onNavigateToWordList = { deckId ->
+                    navController.navigate(Screen.WordList.createRoute(deckId))
                 },
                 onToggleTheme = onToggleTheme,
                 isDarkTheme = isDarkTheme
@@ -115,7 +114,8 @@ fun NavGraph(
                 authViewModel = authViewModel,
                 onNavigateBack = {
                     navController.popBackStack()
-                }
+                },
+                showBackButton = true
             )
         }
 

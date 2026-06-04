@@ -39,12 +39,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// Màu sắc cho biểu đồ
-private val ChartBlue = Color(0xFF1A73E8)
-private val ChartGreen = Color(0xFF34A853)
-private val ChartLightBlue = Color(0xFFBBDEFB)
-private val ChartLightGreen = Color(0xFFC8E6C9)
-private val ChartGridLine = Color(0xFFE0E0E0)
+import androidx.compose.material3.MaterialTheme
+
 
 /**
  * Biểu đồ cột hiển thị hoạt động học tập hàng ngày (7 ngày).
@@ -69,18 +65,23 @@ fun DailyActivityChart(
 
     val textMeasurer = rememberTextMeasurer()
 
+    val chartBlue = MaterialTheme.colorScheme.primary
+    val chartGreen = MaterialTheme.colorScheme.secondary
+    val chartGridLine = MaterialTheme.colorScheme.outlineVariant
+    val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Hoạt Động Hàng Ngày",
-                fontSize = 16.sp,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF202124)
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -88,18 +89,18 @@ fun DailyActivityChart(
             // Legend
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Canvas(modifier = Modifier.size(10.dp)) {
-                    drawCircle(color = ChartBlue)
+                    drawCircle(color = chartBlue)
                 }
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(text = "Từ mới", fontSize = 11.sp, color = Color.Gray)
+                Text(text = "Từ mới", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Canvas(modifier = Modifier.size(10.dp)) {
-                    drawCircle(color = ChartGreen)
+                    drawCircle(color = chartGreen)
                 }
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(text = "Ôn tập", fontSize = 11.sp, color = Color.Gray)
+                Text(text = "Ôn tập", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -126,7 +127,7 @@ fun DailyActivityChart(
                 for (i in 0..3) {
                     val y = chartHeight * (1f - i / 4f)
                     drawLine(
-                        color = ChartGridLine,
+                        color = chartGridLine,
                         start = Offset(0f, y),
                         end = Offset(chartWidth, y),
                         strokeWidth = 1f
@@ -142,7 +143,7 @@ fun DailyActivityChart(
                         (item.wordsLearned.toFloat() / maxValue) * chartHeight * animationProgress
                     if (learnedHeight > 0) {
                         drawRoundRect(
-                            color = ChartBlue,
+                            color = chartBlue,
                             topLeft = Offset(x, chartHeight - learnedHeight),
                             size = Size(barWidth, learnedHeight),
                             cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx())
@@ -154,7 +155,7 @@ fun DailyActivityChart(
                         (item.wordsReviewed.toFloat() / maxValue) * chartHeight * animationProgress
                     if (reviewedHeight > 0) {
                         drawRoundRect(
-                            color = ChartGreen,
+                            color = chartGreen,
                             topLeft = Offset(x + barWidth + gap, chartHeight - reviewedHeight),
                             size = Size(barWidth, reviewedHeight),
                             cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx())
@@ -165,7 +166,7 @@ fun DailyActivityChart(
                     val labelText = item.label
                     val textLayoutResult = textMeasurer.measure(
                         text = labelText,
-                        style = TextStyle(fontSize = 10.sp, color = Color.Gray)
+                        style = TextStyle(fontSize = 10.sp, color = labelColor)
                     )
                     drawText(
                         textLayoutResult = textLayoutResult,
@@ -201,26 +202,30 @@ fun RetentionRateChart(
 
     val textMeasurer = rememberTextMeasurer()
 
+    val chartBlue = MaterialTheme.colorScheme.primary
+    val chartGridLine = MaterialTheme.colorScheme.outlineVariant
+    val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Tỷ Lệ Ghi Nhớ",
-                fontSize = 16.sp,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF202124)
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
                 text = "% trả lời đúng trong 7 ngày qua",
-                fontSize = 11.sp,
-                color = Color.Gray
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -242,7 +247,7 @@ fun RetentionRateChart(
                 for (value in gridValues) {
                     val y = chartHeight * (1f - value / maxPercent)
                     drawLine(
-                        color = ChartGridLine,
+                        color = chartGridLine,
                         start = Offset(0f, y),
                         end = Offset(chartWidth, y),
                         strokeWidth = 1f
@@ -251,7 +256,7 @@ fun RetentionRateChart(
                     // Nhãn %
                     val labelResult = textMeasurer.measure(
                         text = "${value}%",
-                        style = TextStyle(fontSize = 9.sp, color = Color.Gray)
+                        style = TextStyle(fontSize = 9.sp, color = labelColor)
                     )
                     drawText(
                         textLayoutResult = labelResult,
@@ -282,14 +287,14 @@ fun RetentionRateChart(
                     }
                     drawPath(
                         path = fillPath,
-                        color = ChartBlue.copy(alpha = 0.1f)
+                        color = chartBlue.copy(alpha = 0.1f)
                     )
                 }
 
                 // Vẽ đường line
                 for (i in 0 until points.size - 1) {
                     drawLine(
-                        color = ChartBlue,
+                        color = chartBlue,
                         start = points[i],
                         end = points[i + 1],
                         strokeWidth = 3.dp.toPx(),
@@ -305,7 +310,7 @@ fun RetentionRateChart(
                         center = point
                     )
                     drawCircle(
-                        color = ChartBlue,
+                        color = chartBlue,
                         radius = 3.5.dp.toPx(),
                         center = point
                     )
@@ -316,7 +321,7 @@ fun RetentionRateChart(
                     val x = leftPadding + (usableWidth / (data.size - 1).coerceAtLeast(1)) * index
                     val labelResult = textMeasurer.measure(
                         text = item.label,
-                        style = TextStyle(fontSize = 10.sp, color = Color.Gray)
+                        style = TextStyle(fontSize = 10.sp, color = labelColor)
                     )
                     drawText(
                         textLayoutResult = labelResult,
@@ -340,9 +345,9 @@ fun LevelBadge(
     modifier: Modifier = Modifier
 ) {
     val badgeColor = when (level) {
-        "Advanced" -> Color(0xFF34A853)
-        "Intermediate" -> Color(0xFFF9AB00)
-        else -> Color(0xFF1A73E8)
+        "Advanced" -> MaterialTheme.colorScheme.secondary
+        "Intermediate" -> MaterialTheme.colorScheme.tertiary
+        else -> MaterialTheme.colorScheme.primary
     }
 
     val levelVi = when (level) {
@@ -359,7 +364,7 @@ fun LevelBadge(
         Text(
             text = levelVi,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-            fontSize = 12.sp,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
             color = badgeColor,
             textAlign = TextAlign.Center
@@ -387,23 +392,23 @@ fun CardMaturityChart(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Card Maturity (Anki)",
-                fontSize = 16.sp,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF202124)
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
                 text = "Phân bố trạng thái thẻ dựa trên interval SM-2",
-                fontSize = 11.sp,
-                color = Color.Gray
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -419,6 +424,7 @@ fun CardMaturityChart(
                 )
                 LaunchedEffect(Unit) { animationTriggered = true }
 
+                val outlineVariant = MaterialTheme.colorScheme.outlineVariant
                 Canvas(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -430,7 +436,7 @@ fun CardMaturityChart(
 
                     // Background
                     drawRoundRect(
-                        color = Color(0xFFF5F5F5),
+                        color = outlineVariant.copy(alpha = 0.2f),
                         size = Size(size.width, barHeight),
                         cornerRadius = cornerRadius
                     )
@@ -518,8 +524,8 @@ fun CardMaturityChart(
             } else {
                 Text(
                     text = "Chưa có dữ liệu",
-                    fontSize = 13.sp,
-                    color = Color.Gray,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
@@ -543,18 +549,18 @@ private fun MaturityLegendItem(
                 drawCircle(color = color)
             }
             Spacer(modifier = Modifier.width(3.dp))
-            Text(text = label, fontSize = 10.sp, color = Color.Gray)
+            Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Text(
             text = "$count",
-            fontSize = 14.sp,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF202124)
+            color = MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = "${percent.toInt()}%",
-            fontSize = 10.sp,
-            color = Color.Gray
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

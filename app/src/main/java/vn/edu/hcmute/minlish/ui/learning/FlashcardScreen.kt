@@ -622,14 +622,14 @@ fun EvaluationButton(
         ) {
             Text(
                 text = text,
+                style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
                 color = Color.White
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = time,
-                fontSize = 11.sp,
+                style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.8f),
                 fontWeight = FontWeight.Medium
             )
@@ -653,7 +653,7 @@ fun FinishLayout(
         Icon(
             imageVector = Icons.Default.CheckCircle,
             contentDescription = null,
-            tint = Color(0xFF43A047),
+            tint = MaterialTheme.colorScheme.secondary,
             modifier = Modifier
                 .size(100.dp)
                 .shadow(8.dp, CircleShape)
@@ -661,7 +661,7 @@ fun FinishLayout(
         Spacer(modifier = Modifier.height(24.dp))
         Text(
             text = "Chúc Mừng!",
-            fontSize = 32.sp,
+            style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.ExtraBold,
             color = MaterialTheme.colorScheme.primary,
             textAlign = TextAlign.Center

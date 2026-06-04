@@ -56,8 +56,9 @@ fun ProfileScreen(
                 title = {
                     Text(
                         text = "Hồ sơ cá nhân",
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 },
                 navigationIcon = {
@@ -70,7 +71,8 @@ fun ProfileScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF1A73E8)
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         }
@@ -82,8 +84,8 @@ fun ProfileScreen(
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            Color(0xFFE3F2FD),
-                            Color(0xFFFFFFFF)
+                            MaterialTheme.colorScheme.primaryContainer,
+                            MaterialTheme.colorScheme.background
                         )
                     )
                 ),
@@ -101,7 +103,7 @@ fun ProfileScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Column(
@@ -111,7 +113,7 @@ fun ProfileScreen(
                         Icon(
                             imageVector = Icons.Default.Person,
                             contentDescription = "Avatar",
-                            tint = Color(0xFF1A73E8),
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(72.dp)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -128,7 +130,7 @@ fun ProfileScreen(
                                 Icon(
                                     imageVector = Icons.Default.Person,
                                     contentDescription = "Person Icon",
-                                    tint = Color(0xFF1A73E8)
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             },
                             singleLine = true,
@@ -155,22 +157,22 @@ fun ProfileScreen(
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth(),
                             colors = OutlinedTextFieldDefaults.colors(
-                                disabledTextColor = Color.Gray,
-                                disabledBorderColor = Color.LightGray,
-                                disabledLabelColor = Color.Gray
+                                disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                disabledBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         )
 
                         Spacer(modifier = Modifier.height(20.dp))
-                        HorizontalDivider(color = Color(0xFFE0E0E0))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         Spacer(modifier = Modifier.height(16.dp))
 
                         // Chọn Đối tượng người dùng
                         Text(
                             text = "Đối tượng người dùng:",
-                            fontSize = 14.sp,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF202124),
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.align(Alignment.Start)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -188,8 +190,8 @@ fun ProfileScreen(
                                     },
                                     label = { Text(type) },
                                     colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = Color(0xFFE3F2FD),
-                                        selectedLabelColor = Color(0xFF1A73E8)
+                                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
                                     )
                                 )
                             }
@@ -200,9 +202,9 @@ fun ProfileScreen(
                         // Chọn Mục tiêu học tập
                         Text(
                             text = "Mục tiêu học tập:",
-                            fontSize = 14.sp,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF202124),
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.align(Alignment.Start)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -220,8 +222,8 @@ fun ProfileScreen(
                                     },
                                     label = { Text(goal) },
                                     colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = Color(0xFFE3F2FD),
-                                        selectedLabelColor = Color(0xFF1A73E8)
+                                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
                                     )
                                 )
                             }
@@ -232,9 +234,9 @@ fun ProfileScreen(
                         // Chọn Trình độ
                         Text(
                             text = "Trình độ tiếng Anh:",
-                            fontSize = 14.sp,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF202124),
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.align(Alignment.Start)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -252,8 +254,8 @@ fun ProfileScreen(
                                     },
                                     label = { Text(lvl) },
                                     colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = Color(0xFFE3F2FD),
-                                        selectedLabelColor = Color(0xFF1A73E8)
+                                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
                                     )
                                 )
                             }
@@ -266,7 +268,7 @@ fun ProfileScreen(
                             Text(
                                 text = (uiState as AuthUiState.Error).message,
                                 color = MaterialTheme.colorScheme.error,
-                                fontSize = 14.sp,
+                                style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(bottom = 12.dp)
                             )
                         }
@@ -282,7 +284,10 @@ fun ProfileScreen(
                                 )
                             },
                             enabled = uiState !is AuthUiState.Loading,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A73E8)),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -290,16 +295,15 @@ fun ProfileScreen(
                         ) {
                             if (uiState is AuthUiState.Loading) {
                                 CircularProgressIndicator(
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onPrimary,
                                     modifier = Modifier.size(24.dp),
                                     strokeWidth = 2.5.dp
                                 )
                             } else {
                                 Text(
                                     text = "Lưu thay đổi",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         }

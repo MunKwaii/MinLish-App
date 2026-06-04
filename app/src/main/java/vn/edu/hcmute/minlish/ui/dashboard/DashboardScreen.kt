@@ -59,8 +59,9 @@ fun DashboardScreen(
                 title = {
                     Text(
                         text = "MinLish",
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 },
                 actions = {
@@ -68,12 +69,13 @@ fun DashboardScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                             contentDescription = "Logout Icon",
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF1A73E8)
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         }
@@ -85,8 +87,8 @@ fun DashboardScreen(
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            Color(0xFFE3F2FD),
-                            Color(0xFFF5F5F5)
+                            MaterialTheme.colorScheme.primaryContainer,
+                            MaterialTheme.colorScheme.background
                         )
                     )
                 )
@@ -105,7 +107,7 @@ fun DashboardScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Column(
@@ -115,7 +117,7 @@ fun DashboardScreen(
                         Icon(
                             imageVector = Icons.Default.Person,
                             contentDescription = "User Profile",
-                            tint = Color(0xFF1A73E8),
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(48.dp)
                         )
 
@@ -123,15 +125,15 @@ fun DashboardScreen(
 
                         Text(
                             text = "Xin chào, ${currentUser?.name ?: "Người dùng"}!",
-                            fontSize = 20.sp,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF202124)
+                            color = MaterialTheme.colorScheme.onSurface
                         )
 
                         Text(
                             text = currentUser?.email ?: "",
-                            fontSize = 13.sp,
-                            color = Color.Gray
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -150,15 +152,15 @@ fun DashboardScreen(
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "Edit Profile",
-                                tint = Color(0xFF1A73E8),
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "Chỉnh sửa hồ sơ",
-                                fontSize = 13.sp,
+                                style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Medium,
-                                color = Color(0xFF1A73E8)
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
@@ -171,9 +173,9 @@ fun DashboardScreen(
                 // ============================================
                 Text(
                     text = "Thống Kê Học Tập",
-                    fontSize = 16.sp,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF202124),
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.align(Alignment.Start)
                 )
 
@@ -188,7 +190,7 @@ fun DashboardScreen(
                         title = "Từ đã học",
                         value = "${dashboardState.totalWordsLearned}",
                         icon = Icons.Default.School,
-                        tint = Color(0xFF1A73E8)
+                        tint = MaterialTheme.colorScheme.primary
                     )
 
                     StatCard(
@@ -196,7 +198,7 @@ fun DashboardScreen(
                         title = "Streak",
                         value = "${dashboardState.currentStreak} ngày",
                         icon = Icons.Default.LocalFireDepartment,
-                        tint = Color(0xFFEA4335)
+                        tint = MaterialTheme.colorScheme.tertiary
                     )
 
                     StatCard(
@@ -204,7 +206,7 @@ fun DashboardScreen(
                         title = "Accuracy",
                         value = "${dashboardState.accuracyPercent.toInt()}%",
                         icon = Icons.Default.CheckCircle,
-                        tint = Color(0xFF34A853)
+                        tint = MaterialTheme.colorScheme.secondary
                     )
                 }
 
@@ -248,8 +250,8 @@ fun DashboardScreen(
                             .background(
                                 brush = Brush.horizontalGradient(
                                     colors = listOf(
-                                        Color(0xFF1A73E8),
-                                        Color(0xFF1557B0)
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
                                     )
                                 )
                             )
@@ -263,15 +265,15 @@ fun DashboardScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = "Học Flashcard",
-                                    fontSize = 18.sp,
+                                    style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    color = MaterialTheme.colorScheme.onPrimary
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = "Ghi nhớ từ vựng qua lật thẻ thông minh",
-                                    fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.85f)
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
                                 )
                             }
 
@@ -280,7 +282,7 @@ fun DashboardScreen(
                             Button(
                                 onClick = onNavigateToLearning,
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color.White
+                                    containerColor = MaterialTheme.colorScheme.surface
                                 ),
                                 shape = RoundedCornerShape(10.dp),
                                 contentPadding = PaddingValues(
@@ -290,9 +292,9 @@ fun DashboardScreen(
                             ) {
                                 Text(
                                     text = "Học ngay",
-                                    fontSize = 12.sp,
+                                    style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF1A73E8)
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
@@ -306,21 +308,21 @@ fun DashboardScreen(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF34A853)
+                        containerColor = MaterialTheme.colorScheme.secondary
                     )
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.MenuBook,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onSecondary,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "Quản lý bộ từ vựng",
-                        fontSize = 14.sp,
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onSecondary
                     )
                 }
 
@@ -332,21 +334,21 @@ fun DashboardScreen(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color(0xFFEA4335)
+                        contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                         contentDescription = "Logout",
-                        tint = Color(0xFFEA4335),
+                        tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "Đăng xuất",
-                        fontSize = 14.sp,
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFFEA4335)
+                        color = MaterialTheme.colorScheme.error
                     )
                 }
 
@@ -396,7 +398,7 @@ fun StatCard(
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -414,17 +416,17 @@ fun StatCard(
 
             Text(
                 text = value,
-                fontSize = 16.sp,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF202124)
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(2.dp))
 
             Text(
                 text = title,
-                fontSize = 11.sp,
-                color = Color.Gray,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
         }

@@ -99,8 +99,8 @@ fun RegisterScreen(
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFFE8F5E9), // Xanh lá nhạt
-                        Color(0xFFFFFFFF)  // Trắng
+                        MaterialTheme.colorScheme.primaryContainer,
+                        MaterialTheme.colorScheme.background
                     )
                 )
             ),
@@ -117,16 +117,16 @@ fun RegisterScreen(
             // Tiêu đề
             Text(
                 text = "MinLish",
-                fontSize = 42.sp,
+                style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFF2E7D32), // Màu xanh lá đậm
+                color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "Tạo tài khoản mới của bạn",
-                fontSize = 15.sp,
-                color = Color.Gray,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
             
@@ -136,7 +136,7 @@ fun RegisterScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
                 if (showOtpScreen) {
@@ -146,25 +146,25 @@ fun RegisterScreen(
                     ) {
                         Text(
                             text = "XÁC THỰC EMAIL",
-                            fontSize = 20.sp,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF202124),
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
                         
                         Text(
                             text = "Vui lòng nhập mã OTP 6 chữ số đã được gửi đến email:",
-                            fontSize = 14.sp,
-                            color = Color.Gray,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.padding(bottom = 4.dp)
                         )
                         
                         Text(
                             text = email,
-                            fontSize = 15.sp,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF2E7D32),
+                            color = MaterialTheme.colorScheme.primary,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.padding(bottom = 24.dp)
                         )
@@ -227,8 +227,8 @@ fun RegisterScreen(
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     singleLine = true,
                                     colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = Color(0xFF2E7D32),
-                                        unfocusedBorderColor = Color.LightGray
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
                                     )
                                 )
                             }
@@ -240,8 +240,8 @@ fun RegisterScreen(
                         if (timeLeft > 0) {
                             Text(
                                 text = "Gửi lại mã sau ${timeLeft}s",
-                                fontSize = 14.sp,
-                                color = Color.Gray,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Medium
                             )
                         } else {
@@ -253,9 +253,9 @@ fun RegisterScreen(
                             ) {
                                 Text(
                                     text = "Gửi lại mã OTP",
-                                    color = Color(0xFF2E7D32),
+                                    color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp
+                                    style = MaterialTheme.typography.labelLarge
                                 )
                             }
                         }
@@ -267,7 +267,7 @@ fun RegisterScreen(
                             Text(
                                 text = (uiState as AuthUiState.Error).message,
                                 color = MaterialTheme.colorScheme.error,
-                                fontSize = 14.sp,
+                                style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -282,7 +282,10 @@ fun RegisterScreen(
                                 authViewModel.verifyOtp(enteredOtp)
                             },
                             enabled = uiState !is AuthUiState.Loading && otpValues.all { it.isNotEmpty() },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -290,16 +293,15 @@ fun RegisterScreen(
                         ) {
                             if (uiState is AuthUiState.Loading) {
                                 CircularProgressIndicator(
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onPrimary,
                                     modifier = Modifier.size(24.dp),
                                     strokeWidth = 2.5.dp
                                 )
                             } else {
                                 Text(
                                     text = "Xác thực",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         }
@@ -315,11 +317,11 @@ fun RegisterScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(50.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Gray)
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
                         ) {
                             Text(
                                 text = "Quay lại",
-                                fontSize = 16.sp,
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -331,9 +333,9 @@ fun RegisterScreen(
                     ) {
                         Text(
                             text = "ĐĂNG KÝ",
-                            fontSize = 20.sp,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF202124),
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
 
@@ -349,7 +351,7 @@ fun RegisterScreen(
                                 Icon(
                                     imageVector = Icons.Default.Person,
                                     contentDescription = "Name Icon",
-                                    tint = Color(0xFF2E7D32)
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             },
                             singleLine = true,
@@ -371,7 +373,7 @@ fun RegisterScreen(
                                 Icon(
                                     imageVector = Icons.Default.Email,
                                     contentDescription = "Email Icon",
-                                    tint = Color(0xFF2E7D32)
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             },
                             singleLine = true,
@@ -406,7 +408,7 @@ fun RegisterScreen(
                                 Icon(
                                     imageVector = Icons.Default.Lock,
                                     contentDescription = "Password Icon",
-                                    tint = Color(0xFF2E7D32)
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             },
                             trailingIcon = {
@@ -426,9 +428,9 @@ fun RegisterScreen(
                         // Chọn Đối tượng người dùng
                         Text(
                             text = "Bạn là:",
-                            fontSize = 14.sp,
+                            style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
-                            color = Color.DarkGray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.align(Alignment.Start)
                         )
                         Spacer(modifier = Modifier.height(6.dp))
@@ -443,8 +445,8 @@ fun RegisterScreen(
                                     onClick = { selectedUserType = type },
                                     label = { Text(type) },
                                     colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = Color(0xFFE8F5E9),
-                                        selectedLabelColor = Color(0xFF2E7D32)
+                                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
                                     )
                                 )
                             }
@@ -455,9 +457,9 @@ fun RegisterScreen(
                         // Chọn Mục tiêu học tập
                         Text(
                             text = "Mục tiêu học tập của bạn:",
-                            fontSize = 14.sp,
+                            style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
-                            color = Color.DarkGray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.align(Alignment.Start)
                         )
                         Spacer(modifier = Modifier.height(6.dp))
@@ -472,8 +474,8 @@ fun RegisterScreen(
                                     onClick = { selectedGoal = goal },
                                     label = { Text(goal) },
                                     colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = Color(0xFFE8F5E9),
-                                        selectedLabelColor = Color(0xFF2E7D32)
+                                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
                                     )
                                 )
                             }
@@ -484,9 +486,9 @@ fun RegisterScreen(
                         // Chọn trình độ
                         Text(
                             text = "Trình độ tiếng Anh hiện tại:",
-                            fontSize = 14.sp,
+                            style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
-                            color = Color.DarkGray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.align(Alignment.Start)
                         )
                         Spacer(modifier = Modifier.height(6.dp))
@@ -501,8 +503,8 @@ fun RegisterScreen(
                                     onClick = { selectedLevel = lvl },
                                     label = { Text(lvl) },
                                     colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = Color(0xFFE8F5E9),
-                                        selectedLabelColor = Color(0xFF2E7D32)
+                                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
                                     )
                                 )
                             }
@@ -515,7 +517,7 @@ fun RegisterScreen(
                             Text(
                                 text = (uiState as AuthUiState.Error).message,
                                 color = MaterialTheme.colorScheme.error,
-                                fontSize = 14.sp,
+                                style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -536,7 +538,10 @@ fun RegisterScreen(
                                 )
                             },
                             enabled = uiState !is AuthUiState.Loading,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -544,16 +549,15 @@ fun RegisterScreen(
                         ) {
                             if (uiState is AuthUiState.Loading) {
                                 CircularProgressIndicator(
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onPrimary,
                                     modifier = Modifier.size(24.dp),
                                     strokeWidth = 2.5.dp
                                 )
                             } else {
                                 Text(
                                     text = "Đăng ký",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         }
@@ -569,8 +573,8 @@ fun RegisterScreen(
             ) {
                 Text(
                     text = "Đã có tài khoản? ",
-                    fontSize = 14.sp,
-                    color = Color.Gray
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 TextButton(
                     onClick = {
@@ -580,9 +584,9 @@ fun RegisterScreen(
                 ) {
                     Text(
                         text = "Đăng nhập ngay",
-                        fontSize = 14.sp,
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2E7D32)
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }

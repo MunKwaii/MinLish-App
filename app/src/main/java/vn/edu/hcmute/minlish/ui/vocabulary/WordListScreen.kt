@@ -66,6 +66,7 @@ fun WordListScreen(
                 title = {
                     Text(
                         text = uiState.selectedDeck?.name ?: "Danh sách từ vựng",
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -73,14 +74,20 @@ fun WordListScreen(
                     TextButton(
                         onClick = onNavigateBack
                     ) {
-                        Text(text = "Quay lại")
+                        Text(text = "Quay lại", color = MaterialTheme.colorScheme.onPrimary)
                     }
-                }
+                },
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                )
             )
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onAddWordClick
+                onClick = onAddWordClick,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Text(
                     text = "+",

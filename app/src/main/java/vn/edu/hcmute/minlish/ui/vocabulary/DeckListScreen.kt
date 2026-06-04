@@ -106,7 +106,11 @@ fun DeckListScreen(
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
-                }
+                },
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                )
             )
         },
         snackbarHost = {
@@ -116,7 +120,9 @@ fun DeckListScreen(
             FloatingActionButton(
                 onClick = {
                     showAddDeckDialog = true
-                }
+                },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Text(
                     text = "+",

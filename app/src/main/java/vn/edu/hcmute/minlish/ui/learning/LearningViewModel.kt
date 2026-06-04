@@ -12,6 +12,7 @@ import vn.edu.hcmute.minlish.data.local.entity.FlashcardProgress
 import vn.edu.hcmute.minlish.data.local.entity.Word
 import vn.edu.hcmute.minlish.data.repository.ProgressRepository
 import vn.edu.hcmute.minlish.data.repository.VocabularyRepository
+import vn.edu.hcmute.minlish.data.util.SettingsManager
 
 enum class CardDifficulty {
     AGAIN, HARD, GOOD, EASY
@@ -32,6 +33,7 @@ class LearningViewModel(
     private val deckId: Int?,
     private val vocabularyRepository: VocabularyRepository,
     private val progressRepository: ProgressRepository,
+    private val settingsManager: SettingsManager,
     private val spacedRepetitionStrategy: SpacedRepetitionStrategy = SM2Algorithm()
 ) : ViewModel() {
 
@@ -46,14 +48,18 @@ class LearningViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
-                // 1. Tải danh sách từ vựng từ Database (sử dụng first() để khóa danh sách cho phiên học hiện tại)
-                val wordsList = if (deckId != null && deckId != -1) {
-                    vocabularyRepository.getWordsByDeck(deckId).first()
-                } else {
-                    vocabularyRepository.getAllWordsByUser(userId).first()
-                }
+                // 1. Tải giới hạn từ mới từ SettingsManager (DataStore)
+                val limit = settingsManager.newWordsLimitFlow.first()
 
-                // 2. Tải toàn bộ FlashcardProgress của User để tra cứu tiến trình ôn tập
+                // 2. Tải Daily Study Deck gộp từ mới và từ cần ôn tập
+                val wordsList = vocabularyRepository.getDailyStudyDeck(
+                    userId = userId,
+                    deckId = if (deckId != null && deckId != -1) deckId else null,
+                    newWordsLimit = limit,
+                    currentTimestamp = System.currentTimeMillis()
+                )
+
+                // 3. Tải toàn bộ FlashcardProgress của User để tra cứu tiến trình ôn tập
                 val allProgress = progressRepository.getFlashcardProgressByUser(userId)
                 val progressMap = allProgress.associateBy { it.wordId }
 

@@ -34,4 +34,8 @@ class MinLishApplication : Application() {
     val sessionManager: SessionManager by lazy {
         SessionManager(this)
     }
+
+    val settingsManager: vn.edu.hcmute.minlish.data.util.SettingsManager by lazy {
+        vn.edu.hcmute.minlish.data.util.SettingsManager(this)
+    }
 }

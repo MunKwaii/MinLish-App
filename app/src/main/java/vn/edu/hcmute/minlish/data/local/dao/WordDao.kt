@@ -35,4 +35,20 @@ interface WordDao {
 
     @Query("SELECT w.* FROM words w INNER JOIN decks d ON w.deckId = d.deckId WHERE d.userId = :userId")
     fun getAllWordsByUser(userId: Int): Flow<List<Word>>
+
+    // Lấy các từ mới chưa học trong một bộ từ cụ thể
+    @Query("SELECT * FROM words WHERE deckId = :deckId AND wordId NOT IN (SELECT wordId FROM flashcard_progress WHERE userId = :userId) LIMIT :limit")
+    fun getNewWordsByDeck(userId: Int, deckId: Int, limit: Int): Flow<List<Word>>
+
+    // Lấy các từ mới chưa học trên toàn bộ ứng dụng của user
+    @Query("SELECT w.* FROM words w INNER JOIN decks d ON w.deckId = d.deckId WHERE d.userId = :userId AND w.wordId NOT IN (SELECT wordId FROM flashcard_progress WHERE userId = :userId) LIMIT :limit")
+    fun getAllNewWordsByUser(userId: Int, limit: Int): Flow<List<Word>>
+
+    // Lấy các từ đã đến hạn ôn tập trong một bộ từ cụ thể
+    @Query("SELECT w.* FROM words w INNER JOIN flashcard_progress p ON w.wordId = p.wordId WHERE w.deckId = :deckId AND p.userId = :userId AND p.nextReviewTime <= :currentTimestamp")
+    fun getWordsDueForReviewByDeck(userId: Int, deckId: Int, currentTimestamp: Long): Flow<List<Word>>
+
+    // Lấy các từ đã đến hạn ôn tập trên toàn bộ ứng dụng của user
+    @Query("SELECT w.* FROM words w INNER JOIN decks d ON w.deckId = d.deckId INNER JOIN flashcard_progress p ON w.wordId = p.wordId WHERE d.userId = :userId AND p.userId = :userId AND p.nextReviewTime <= :currentTimestamp")
+    fun getAllWordsDueForReviewByUser(userId: Int, currentTimestamp: Long): Flow<List<Word>>
 }

@@ -119,12 +119,51 @@ fun NavGraph(
             )
         }
 
-        composable(Screen.Learning.route) {
-            FlashcardScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
+        composable(
+            route = Screen.Learning.route,
+            arguments = listOf(
+                navArgument("deckId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
                 }
             )
+        ) { backStackEntry ->
+            val deckIdString = backStackEntry.arguments?.getString("jwt_token") // Wait, the argument key is deckId! Let's get deckId.
+            // Oh wait, in Routes.kt we have learning?deckId={deckId}, so key is "deckId".
+            val deckIdParam = backStackEntry.arguments?.getString("deckId")
+            val deckId = deckIdParam?.toIntOrNull()
+
+            val app = androidx.compose.ui.platform.LocalContext.current.applicationContext as vn.edu.hcmute.minlish.MinLishApplication
+            val currentUser by authViewModel.currentUser.collectAsState()
+            val user = currentUser
+
+            if (user != null) {
+                val learningViewModel: vn.edu.hcmute.minlish.ui.learning.LearningViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = vn.edu.hcmute.minlish.ui.learning.LearningViewModelFactory(
+                        userId = user.userId,
+                        deckId = deckId,
+                        vocabularyRepository = app.vocabularyRepository,
+                        progressRepository = app.progressRepository
+                    )
+                )
+                FlashcardScreen(
+                    viewModel = learningViewModel,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            } else {
+                MissingUserContent(
+                    onBackToLogin = {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.Learning.route) {
+                                inclusive = true
+                            }
+                        }
+                    }
+                )
+            }
         }
 
         composable(Screen.Vocabulary.route) {
@@ -174,6 +213,11 @@ fun NavGraph(
                     onAddWordClick = {
                         navController.navigate(
                             Screen.AddWord.createRoute(deckId)
+                        )
+                    },
+                    onStartLearningClick = { id ->
+                        navController.navigate(
+                            Screen.Learning.createRoute(id)
                         )
                     }
                 )

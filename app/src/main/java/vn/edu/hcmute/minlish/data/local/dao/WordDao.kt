@@ -32,4 +32,7 @@ interface WordDao {
 
     @Query("DELETE FROM words WHERE deckId = :deckId")
     suspend fun deleteWordsByDeck(deckId: Int)
+
+    @Query("SELECT w.* FROM words w INNER JOIN decks d ON w.deckId = d.deckId WHERE d.userId = :userId")
+    fun getAllWordsByUser(userId: Int): Flow<List<Word>>
 }

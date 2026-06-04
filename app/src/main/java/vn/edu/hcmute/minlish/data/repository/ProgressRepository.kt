@@ -45,5 +45,9 @@ interface ProgressRepository {
 
     // Đếm tổng số từ trong tất cả bộ từ của user
     suspend fun getTotalWordCountByUser(userId: Int): Int
+
+    suspend fun getFlashcardProgress(userId: Int, wordId: Int): FlashcardProgress?
+
+    suspend fun saveFlashcardProgress(progress: FlashcardProgress): Result<Long>
 }
 

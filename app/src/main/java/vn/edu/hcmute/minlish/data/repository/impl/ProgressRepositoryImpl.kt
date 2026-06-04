@@ -79,5 +79,22 @@ class ProgressRepositoryImpl(
             studyProgressDao.getTotalWordCountByUser(userId)
         }
     }
+
+    override suspend fun getFlashcardProgress(userId: Int, wordId: Int): FlashcardProgress? {
+        return withContext(Dispatchers.IO) {
+            studyProgressDao.getFlashcardProgress(userId, wordId)
+        }
+    }
+
+    override suspend fun saveFlashcardProgress(progress: FlashcardProgress): Result<Long> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val id = studyProgressDao.insertOrUpdateFlashcardProgress(progress)
+                Result.success(id)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
 }
 

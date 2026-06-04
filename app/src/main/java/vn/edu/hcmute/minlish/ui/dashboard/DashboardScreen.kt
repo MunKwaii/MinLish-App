@@ -66,24 +66,8 @@ fun DashboardScreen(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 },
-                actions = {
-                    IconButton(onClick = onToggleTheme) {
-                        Text(
-                            text = if (isDarkTheme) "🌞" else "🌙",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
-                    IconButton(onClick = onLogout) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                            contentDescription = "Logout Icon",
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             )
         }

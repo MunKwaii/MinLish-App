@@ -3,20 +3,26 @@ package vn.edu.hcmute.minlish.ui.dashboard
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -30,19 +36,29 @@ import vn.edu.hcmute.minlish.ui.auth.AuthViewModel
 @Composable
 fun DashboardScreen(
     authViewModel: AuthViewModel,
+    dashboardViewModel: DashboardViewModel,
     onLogout: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToLearning: () -> Unit,
     onNavigateToVocabulary: () -> Unit
 ) {
     val currentUser by authViewModel.currentUser.collectAsState()
+    val dashboardState by dashboardViewModel.uiState.collectAsState()
+
+    // Tải dữ liệu dashboard khi có user
+    LaunchedEffect(currentUser) {
+        val user = currentUser
+        if (user != null) {
+            dashboardViewModel.loadDashboardData(user.userId)
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "MinLish Dashboard",
+                        text = "MinLish",
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
@@ -70,26 +86,27 @@ fun DashboardScreen(
                     brush = Brush.verticalGradient(
                         colors = listOf(
                             Color(0xFFE3F2FD),
-                            Color(0xFFFFFFFF)
+                            Color(0xFFF5F5F5)
                         )
                     )
-                ),
-            contentAlignment = Alignment.TopCenter
+                )
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
 
-                // Thẻ thông tin cá nhân
+                // ============================================
+                // SECTION 1: Thẻ chào mừng + Level Badge
+                // ============================================
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Column(
                         modifier = Modifier.padding(20.dp),
@@ -99,96 +116,49 @@ fun DashboardScreen(
                             imageVector = Icons.Default.Person,
                             contentDescription = "User Profile",
                             tint = Color(0xFF1A73E8),
-                            modifier = Modifier.size(64.dp)
+                            modifier = Modifier.size(48.dp)
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
                             text = "Xin chào, ${currentUser?.name ?: "Người dùng"}!",
-                            fontSize = 22.sp,
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF202124)
                         )
 
                         Text(
                             text = currentUser?.email ?: "",
-                            fontSize = 14.sp,
+                            fontSize = 13.sp,
                             color = Color.Gray
                         )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                        HorizontalDivider(color = Color(0xFFE0E0E0))
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceAround
-                        ) {
-                            InfoItem(
-                                modifier = Modifier.weight(1f),
-                                title = "Đối tượng",
-                                value = currentUser?.userType ?: "Chưa chọn"
-                            )
-
-                            InfoItem(
-                                modifier = Modifier.weight(1f),
-                                title = "Mục tiêu",
-                                value = currentUser?.learningGoal ?: "Chưa chọn"
-                            )
-
-                            InfoItem(
-                                modifier = Modifier.weight(1f),
-                                title = "Trình độ",
-                                value = currentUser?.level ?: "Chưa chọn"
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        HorizontalDivider(color = Color(0xFFE0E0E0))
+                        // Level Badge
+                        LevelBadge(level = dashboardState.estimatedLevel)
 
                         Spacer(modifier = Modifier.height(12.dp))
 
+                        // Nút chỉnh sửa hồ sơ
                         OutlinedButton(
                             onClick = onNavigateToProfile,
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "Edit Profile",
                                 tint = Color(0xFF1A73E8),
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(16.dp)
                             )
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "Chỉnh sửa hồ sơ",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
                                 color = Color(0xFF1A73E8)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Button(
-                            onClick = onNavigateToVocabulary,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF34A853)
-                            )
-                        ) {
-                            Text(
-                                text = "Quản lý bộ từ vựng",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
                             )
                         }
                     }
@@ -196,11 +166,71 @@ fun DashboardScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Gradient card to launch Flashcard learning
+                // ============================================
+                // SECTION 2: Thống kê tổng hợp (3 stat cards)
+                // ============================================
+                Text(
+                    text = "Thống Kê Học Tập",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF202124),
+                    modifier = Modifier.align(Alignment.Start)
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    StatCard(
+                        modifier = Modifier.weight(1f),
+                        title = "Từ đã học",
+                        value = "${dashboardState.totalWordsLearned}",
+                        icon = Icons.Default.School,
+                        tint = Color(0xFF1A73E8)
+                    )
+
+                    StatCard(
+                        modifier = Modifier.weight(1f),
+                        title = "Streak",
+                        value = "${dashboardState.currentStreak} ngày",
+                        icon = Icons.Default.LocalFireDepartment,
+                        tint = Color(0xFFEA4335)
+                    )
+
+                    StatCard(
+                        modifier = Modifier.weight(1f),
+                        title = "Accuracy",
+                        value = "${dashboardState.accuracyPercent.toInt()}%",
+                        icon = Icons.Default.CheckCircle,
+                        tint = Color(0xFF34A853)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // ============================================
+                // SECTION 3: Biểu đồ hoạt động hàng ngày
+                // ============================================
+                DailyActivityChart(data = dashboardState.dailyActivity)
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // ============================================
+                // SECTION 4: Biểu đồ Retention Rate
+                // ============================================
+                RetentionRateChart(data = dashboardState.retentionData)
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // ============================================
+                // SECTION 5: Quick actions
+                // ============================================
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .shadow(8.dp, shape = RoundedCornerShape(16.dp))
+                        .shadow(4.dp, shape = RoundedCornerShape(16.dp))
                         .clickable(onClick = onNavigateToLearning),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.Transparent)
@@ -216,7 +246,7 @@ fun DashboardScreen(
                                     )
                                 )
                             )
-                            .padding(20.dp)
+                            .padding(16.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -225,36 +255,35 @@ fun DashboardScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Học Flashcard 3D",
-                                    fontSize = 20.sp,
+                                    text = "Học Flashcard",
+                                    fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
                                 )
-
-                                Spacer(modifier = Modifier.height(4.dp))
-
+                                Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "Ghi nhớ từ vựng hiệu quả qua phương pháp lật thẻ thông minh.",
-                                    fontSize = 13.sp,
-                                    color = Color.White.copy(alpha = 0.85f),
-                                    lineHeight = 18.sp
+                                    text = "Ghi nhớ từ vựng qua lật thẻ thông minh",
+                                    fontSize = 12.sp,
+                                    color = Color.White.copy(alpha = 0.85f)
                                 )
                             }
 
-                            Spacer(modifier = Modifier.width(16.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
 
                             Button(
                                 onClick = onNavigateToLearning,
-                                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.White
+                                ),
                                 shape = RoundedCornerShape(10.dp),
                                 contentPadding = PaddingValues(
-                                    horizontal = 16.dp,
-                                    vertical = 8.dp
+                                    horizontal = 14.dp,
+                                    vertical = 6.dp
                                 )
                             ) {
                                 Text(
                                     text = "Học ngay",
-                                    fontSize = 13.sp,
+                                    fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF1A73E8)
                                 )
@@ -263,97 +292,58 @@ fun DashboardScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                // Tiêu đề thống kê học tập
-                Text(
-                    text = "Thống Kê Học Tập",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF202124),
-                    modifier = Modifier.align(Alignment.Start)
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Grid thông số học tập
-                Row(
+                Button(
+                    onClick = onNavigateToVocabulary,
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        title = "Số từ đã học",
-                        value = "${currentUser?.totalWordsLearned ?: 0}",
-                        icon = Icons.Default.Star,
-                        tint = Color(0xFFF9AB00)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF34A853)
                     )
-
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        title = "Chuỗi ngày",
-                        value = "${currentUser?.currentStreak ?: 0} ngày",
-                        icon = Icons.Default.Timeline,
-                        tint = Color(0xFFEA4335)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Quản lý bộ từ vựng",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Card tỉ lệ chính xác
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Tỉ lệ trả lời đúng",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF202124)
-                        )
-
-                        Text(
-                            text = "${((currentUser?.accuracyRate ?: 0f) * 100).toInt()}%",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF34A853)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(40.dp))
-
-                Button(
+                // Nút đăng xuất
+                OutlinedButton(
                     onClick = onLogout,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEA4335)),
                     shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color(0xFFEA4335)
+                    )
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                         contentDescription = "Logout",
-                        tint = Color.White,
-                        modifier = Modifier.padding(end = 8.dp)
+                        tint = Color(0xFFEA4335),
+                        modifier = Modifier.size(18.dp)
                     )
-
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Đăng xuất tài khoản",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        text = "Đăng xuất",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFFEA4335)
                     )
                 }
+
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
@@ -400,33 +390,33 @@ fun StatCard(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = tint,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(28.dp)
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             Text(
                 text = value,
-                fontSize = 18.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF202124)
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
             Text(
                 text = title,
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 color = Color.Gray,
                 textAlign = TextAlign.Center
             )

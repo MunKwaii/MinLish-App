@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import vn.edu.hcmute.minlish.data.local.dao.DeckDao
+import vn.edu.hcmute.minlish.data.local.dao.StudyProgressDao
 import vn.edu.hcmute.minlish.data.local.dao.UserDao
 import vn.edu.hcmute.minlish.data.local.dao.WordDao
 import vn.edu.hcmute.minlish.data.local.entity.Deck
@@ -21,13 +22,14 @@ import vn.edu.hcmute.minlish.data.local.entity.Word
         FlashcardProgress::class,
         StudyProgress::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class MinlishDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun deckDao(): DeckDao
     abstract fun wordDao(): WordDao
+    abstract fun studyProgressDao(): StudyProgressDao
 
     companion object {
         @Volatile

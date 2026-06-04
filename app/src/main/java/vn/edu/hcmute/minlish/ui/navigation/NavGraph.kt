@@ -21,6 +21,7 @@ import vn.edu.hcmute.minlish.ui.auth.LoginScreen
 import vn.edu.hcmute.minlish.ui.auth.ProfileScreen
 import vn.edu.hcmute.minlish.ui.auth.RegisterScreen
 import vn.edu.hcmute.minlish.ui.dashboard.DashboardScreen
+import vn.edu.hcmute.minlish.ui.dashboard.DashboardViewModel
 import vn.edu.hcmute.minlish.ui.learning.FlashcardScreen
 import vn.edu.hcmute.minlish.ui.vocabulary.AddWordScreen
 import vn.edu.hcmute.minlish.ui.vocabulary.DeckListScreen
@@ -37,7 +38,8 @@ import vn.edu.hcmute.minlish.ui.vocabulary.WordListScreen
 fun NavGraph(
     navController: NavHostController,
     authViewModel: AuthViewModel,
-    vocabViewModel: VocabViewModel
+    vocabViewModel: VocabViewModel,
+    dashboardViewModel: DashboardViewModel
 ) {
     NavHost(
         navController = navController,
@@ -82,6 +84,7 @@ fun NavGraph(
         composable(Screen.Dashboard.route) {
             DashboardScreen(
                 authViewModel = authViewModel,
+                dashboardViewModel = dashboardViewModel,
                 onLogout = {
                     authViewModel.logout()
 

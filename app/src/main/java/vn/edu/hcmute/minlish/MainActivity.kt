@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import vn.edu.hcmute.minlish.ui.auth.AuthViewModel
 import vn.edu.hcmute.minlish.ui.auth.AuthViewModelFactory
+import vn.edu.hcmute.minlish.ui.dashboard.DashboardViewModel
+import vn.edu.hcmute.minlish.ui.dashboard.DashboardViewModelFactory
 import vn.edu.hcmute.minlish.ui.navigation.NavGraph
 import vn.edu.hcmute.minlish.ui.theme.MinLishTheme
 import vn.edu.hcmute.minlish.ui.vocabulary.VocabViewModel
@@ -28,6 +30,11 @@ class MainActivity : ComponentActivity() {
     private val vocabViewModel: VocabViewModel by viewModels {
         val app = application as MinLishApplication
         VocabViewModelFactory(app.vocabularyRepository)
+    }
+
+    private val dashboardViewModel: DashboardViewModel by viewModels {
+        val app = application as MinLishApplication
+        DashboardViewModelFactory(app.progressRepository)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,7 +57,8 @@ class MainActivity : ComponentActivity() {
                         NavGraph(
                             navController = navController,
                             authViewModel = authViewModel,
-                            vocabViewModel = vocabViewModel
+                            vocabViewModel = vocabViewModel,
+                            dashboardViewModel = dashboardViewModel
                         )
                     }
                 }

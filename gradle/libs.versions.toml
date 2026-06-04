@@ -9,7 +9,7 @@ activityCompose = "1.13.0"
 kotlin = "2.2.10"
 composeBom = "2026.02.01"
 ksp = "2.2.10-2.0.2" #ksp
-room = "2.6.1"   #room
+room = "2.8.4"   #room
 navigationCompose = "2.8.5"
 playServicesAuth = "21.1.1"
 

@@ -66,5 +66,11 @@ interface StudyProgressDao {
         "SELECT COUNT(*) FROM words w INNER JOIN decks d ON w.deckId = d.deckId WHERE d.userId = :userId"
     )
     suspend fun getTotalWordCountByUser(userId: Int): Int
+
+    @Query("SELECT * FROM flashcard_progress WHERE userId = :userId AND wordId = :wordId LIMIT 1")
+    suspend fun getFlashcardProgress(userId: Int, wordId: Int): FlashcardProgress?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrUpdateFlashcardProgress(progress: FlashcardProgress): Long
 }
 

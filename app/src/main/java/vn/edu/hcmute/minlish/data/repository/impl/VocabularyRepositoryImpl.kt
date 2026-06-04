@@ -104,4 +104,8 @@ class VocabularyRepositoryImpl(
             }
         }
     }
+
+    override fun getAllWordsByUser(userId: Int): Flow<List<Word>> {
+        return wordDao.getAllWordsByUser(userId)
+    }
 }

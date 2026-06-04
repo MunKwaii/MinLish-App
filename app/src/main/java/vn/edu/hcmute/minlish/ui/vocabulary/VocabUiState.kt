@@ -2,6 +2,7 @@ package vn.edu.hcmute.minlish.ui.vocabulary
 
 import vn.edu.hcmute.minlish.data.local.entity.Deck
 import vn.edu.hcmute.minlish.data.local.entity.Word
+import vn.edu.hcmute.minlish.data.remote.dictionary.DictionaryLookupResult
 
 /**
  * Lưu toàn bộ dữ liệu trạng thái cần thiết cho các màn hình Vocabulary.
@@ -17,5 +18,9 @@ data class VocabUiState(
 
     val isLoading: Boolean = false,
     val successMessage: String? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+
+    val lookupResult: DictionaryLookupResult? = null,
+    val isLookupLoading: Boolean = false,
+    val lookupError: String? = null
 )

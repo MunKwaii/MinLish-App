@@ -326,6 +326,46 @@ class VocabViewModel(
             )
         }
     }
+
+    // Tra cứu chi tiết từ vựng từ API
+    fun lookupWordDetails(word: String) {
+        if (word.isBlank()) return
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(isLookupLoading = true, lookupError = null)
+            }
+
+            try {
+                val dictionaryApi = DictionaryApiDataSource()
+                val result = dictionaryApi.lookupWord(word)
+                _uiState.update {
+                    it.copy(
+                        lookupResult = result,
+                        isLookupLoading = false
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLookupLoading = false,
+                        lookupError = e.message ?: "Không thể tra cứu từ vựng"
+                    )
+                }
+            }
+        }
+    }
+
+    // Reset kết quả tra cứu từ vựng
+    fun resetLookupResult() {
+        _uiState.update {
+            it.copy(
+                lookupResult = null,
+                isLookupLoading = false,
+                lookupError = null
+            )
+        }
+    }
 }
 
 class VocabViewModelFactory(

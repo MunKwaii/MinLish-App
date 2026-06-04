@@ -32,7 +32,8 @@ fun DashboardScreen(
     authViewModel: AuthViewModel,
     onLogout: () -> Unit,
     onNavigateToProfile: () -> Unit,
-    onNavigateToLearning: () -> Unit
+    onNavigateToLearning: () -> Unit,
+    onNavigateToVocabulary: () -> Unit
 ) {
     val currentUser by authViewModel.currentUser.collectAsState()
 
@@ -100,13 +101,16 @@ fun DashboardScreen(
                             tint = Color(0xFF1A73E8),
                             modifier = Modifier.size(64.dp)
                         )
+
                         Spacer(modifier = Modifier.height(12.dp))
+
                         Text(
                             text = "Xin chào, ${currentUser?.name ?: "Người dùng"}!",
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF202124)
                         )
+
                         Text(
                             text = currentUser?.email ?: "",
                             fontSize = 14.sp,
@@ -114,7 +118,9 @@ fun DashboardScreen(
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
+
                         HorizontalDivider(color = Color(0xFFE0E0E0))
+
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Row(
@@ -126,11 +132,13 @@ fun DashboardScreen(
                                 title = "Đối tượng",
                                 value = currentUser?.userType ?: "Chưa chọn"
                             )
+
                             InfoItem(
                                 modifier = Modifier.weight(1f),
                                 title = "Mục tiêu",
                                 value = currentUser?.learningGoal ?: "Chưa chọn"
                             )
+
                             InfoItem(
                                 modifier = Modifier.weight(1f),
                                 title = "Trình độ",
@@ -139,7 +147,9 @@ fun DashboardScreen(
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
+
                         HorizontalDivider(color = Color(0xFFE0E0E0))
+
                         Spacer(modifier = Modifier.height(12.dp))
 
                         OutlinedButton(
@@ -153,12 +163,32 @@ fun DashboardScreen(
                                 tint = Color(0xFF1A73E8),
                                 modifier = Modifier.size(18.dp)
                             )
+
                             Spacer(modifier = Modifier.width(8.dp))
+
                             Text(
                                 text = "Chỉnh sửa hồ sơ",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF1A73E8)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Button(
+                            onClick = onNavigateToVocabulary,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF34A853)
+                            )
+                        ) {
+                            Text(
+                                text = "Quản lý bộ từ vựng",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
                             )
                         }
                     }
@@ -200,7 +230,9 @@ fun DashboardScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
                                 )
+
                                 Spacer(modifier = Modifier.height(4.dp))
+
                                 Text(
                                     text = "Ghi nhớ từ vựng hiệu quả qua phương pháp lật thẻ thông minh.",
                                     fontSize = 13.sp,
@@ -208,12 +240,17 @@ fun DashboardScreen(
                                     lineHeight = 18.sp
                                 )
                             }
+
                             Spacer(modifier = Modifier.width(16.dp))
+
                             Button(
                                 onClick = onNavigateToLearning,
                                 colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                                 shape = RoundedCornerShape(10.dp),
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                                contentPadding = PaddingValues(
+                                    horizontal = 16.dp,
+                                    vertical = 8.dp
+                                )
                             ) {
                                 Text(
                                     text = "Học ngay",
@@ -236,6 +273,7 @@ fun DashboardScreen(
                     color = Color(0xFF202124),
                     modifier = Modifier.align(Alignment.Start)
                 )
+
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Grid thông số học tập
@@ -250,6 +288,7 @@ fun DashboardScreen(
                         icon = Icons.Default.Star,
                         tint = Color(0xFFF9AB00)
                     )
+
                     StatCard(
                         modifier = Modifier.weight(1f),
                         title = "Chuỗi ngày",
@@ -281,6 +320,7 @@ fun DashboardScreen(
                             fontWeight = FontWeight.Medium,
                             color = Color(0xFF202124)
                         )
+
                         Text(
                             text = "${((currentUser?.accuracyRate ?: 0f) * 100).toInt()}%",
                             fontSize = 18.sp,
@@ -306,6 +346,7 @@ fun DashboardScreen(
                         tint = Color.White,
                         modifier = Modifier.padding(end = 8.dp)
                     )
+
                     Text(
                         text = "Đăng xuất tài khoản",
                         fontSize = 16.sp,
@@ -334,7 +375,9 @@ fun InfoItem(
             color = Color.Gray,
             textAlign = TextAlign.Center
         )
+
         Spacer(modifier = Modifier.height(4.dp))
+
         Text(
             text = value,
             fontSize = 15.sp,
@@ -369,14 +412,18 @@ fun StatCard(
                 tint = tint,
                 modifier = Modifier.size(32.dp)
             )
+
             Spacer(modifier = Modifier.height(8.dp))
+
             Text(
                 text = value,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF202124)
             )
+
             Spacer(modifier = Modifier.height(4.dp))
+
             Text(
                 text = title,
                 fontSize = 12.sp,

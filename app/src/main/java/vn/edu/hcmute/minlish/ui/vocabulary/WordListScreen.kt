@@ -1,5 +1,7 @@
 package vn.edu.hcmute.minlish.ui.vocabulary
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,30 +16,38 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import vn.edu.hcmute.minlish.data.local.entity.Word
+import vn.edu.hcmute.minlish.data.util.VocabularyCsvUtil
+import vn.edu.hcmute.minlish.data.util.VocabularyExcelUtil
 
-/**
- * Màn hình hiển thị danh sách từ vựng trong một bộ từ.
- *
- * Màn hình này chỉ nhận deckId, sau đó gọi ViewModel để tải dữ liệu.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WordListScreen(
@@ -49,38 +59,261 @@ fun WordListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    /**
-     * Tải danh sách từ vựng khi màn hình được mở.
-     *
-     * LaunchedEffect(deckId) giúp tránh việc gọi loadWords nhiều lần
-     * khi Compose recomposition.
-     */
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    var importMenuExpanded by remember { mutableStateOf(false) }
+    var exportMenuExpanded by remember { mutableStateOf(false) }
+
+    // Chọn file CSV từ bộ nhớ điện thoại rồi import bằng Dictionary API
+    val importCsvLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+
+        runCatching {
+            VocabularyCsvUtil.readWordsFromCsv(context, uri)
+        }.onSuccess { words ->
+            if (words.isEmpty()) {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("File CSV không có từ hợp lệ")
+                }
+            } else {
+                viewModel.importWordsFromDictionary(deckId, words)
+            }
+        }.onFailure { exception ->
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(
+                    exception.message ?: "Không thể đọc file CSV"
+                )
+            }
+        }
+    }
+
+    // Chọn file Excel từ bộ nhớ điện thoại rồi import bằng Dictionary API
+    val importExcelLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+
+        runCatching {
+            VocabularyExcelUtil.readWordsFromExcel(context, uri)
+        }.onSuccess { words ->
+            if (words.isEmpty()) {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("File Excel không có từ hợp lệ")
+                }
+            } else {
+                viewModel.importWordsFromDictionary(deckId, words)
+            }
+        }.onFailure { exception ->
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(
+                    exception.message ?: "Không thể đọc file Excel"
+                )
+            }
+        }
+    }
+
+    // Tạo file CSV và ghi danh sách từ hiện tại ra bộ nhớ điện thoại
+    val exportCsvLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+
+        runCatching {
+            VocabularyCsvUtil.writeWordsToCsv(
+                context = context,
+                uri = uri,
+                words = uiState.words
+            )
+        }.onSuccess {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Đã export CSV thành công")
+            }
+        }.onFailure { exception ->
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(
+                    exception.message ?: "Export CSV thất bại"
+                )
+            }
+        }
+    }
+
+    // Tạo file Excel và ghi danh sách từ hiện tại ra bộ nhớ điện thoại
+    val exportExcelLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+
+        runCatching {
+            VocabularyExcelUtil.writeWordsToExcel(
+                context = context,
+                uri = uri,
+                words = uiState.words
+            )
+        }.onSuccess {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Đã export Excel thành công")
+            }
+        }.onFailure { exception ->
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(
+                    exception.message ?: "Export Excel thất bại"
+                )
+            }
+        }
+    }
+
     LaunchedEffect(deckId) {
         viewModel.loadWords(deckId)
     }
 
+    LaunchedEffect(uiState.successMessage, uiState.errorMessage) {
+        val message = uiState.successMessage ?: uiState.errorMessage
+
+        if (!message.isNullOrBlank()) {
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearMessage()
+        }
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        },
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         text = uiState.selectedDeck?.name ?: "Danh sách từ vựng",
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 },
                 navigationIcon = {
-                    TextButton(
-                        onClick = onNavigateBack
-                    ) {
-                        Text(text = "Quay lại")
+                    TextButton(onClick = onNavigateBack) {
+                        Text(
+                            text = "Quay lại",
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
                     }
-                }
+                },
+                actions = {
+                    Box {
+                        TextButton(
+                            onClick = {
+                                importMenuExpanded = true
+                            }
+                        ) {
+                            Text(
+                                text = "Import",
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = importMenuExpanded,
+                            onDismissRequest = {
+                                importMenuExpanded = false
+                            }
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text("Import CSV")
+                                },
+                                onClick = {
+                                    importMenuExpanded = false
+                                    importCsvLauncher.launch(
+                                        arrayOf(
+                                            "text/*",
+                                            "text/csv",
+                                            "application/csv",
+                                            "application/vnd.ms-excel",
+                                            "application/octet-stream"
+                                        )
+                                    )
+                                }
+                            )
+
+                            DropdownMenuItem(
+                                text = {
+                                    Text("Import Excel")
+                                },
+                                onClick = {
+                                    importMenuExpanded = false
+                                    importExcelLauncher.launch(
+                                        arrayOf(
+                                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                            "application/vnd.ms-excel",
+                                            "application/octet-stream"
+                                        )
+                                    )
+                                }
+                            )
+                        }
+                    }
+
+                    Box {
+                        TextButton(
+                            enabled = uiState.words.isNotEmpty(),
+                            onClick = {
+                                exportMenuExpanded = true
+                            }
+                        ) {
+                            Text(
+                                text = "Export",
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = exportMenuExpanded,
+                            onDismissRequest = {
+                                exportMenuExpanded = false
+                            }
+                        ) {
+                            DropdownMenuItem(
+                                enabled = uiState.words.isNotEmpty(),
+                                text = {
+                                    Text("Export CSV")
+                                },
+                                onClick = {
+                                    exportMenuExpanded = false
+                                    exportCsvLauncher.launch("minlish_deck_$deckId.csv")
+                                }
+                            )
+
+                            DropdownMenuItem(
+                                enabled = uiState.words.isNotEmpty(),
+                                text = {
+                                    Text("Export Excel")
+                                },
+                                onClick = {
+                                    exportMenuExpanded = false
+                                    exportExcelLauncher.launch("minlish_deck_$deckId.xlsx")
+                                }
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                )
             )
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onAddWordClick
+                onClick = onAddWordClick,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Text(
                     text = "+",
@@ -115,9 +348,6 @@ fun WordListScreen(
     }
 }
 
-/**
- * Danh sách các từ vựng trong bộ từ.
- */
 @Composable
 private fun WordListContent(
     words: List<Word>
@@ -129,18 +359,13 @@ private fun WordListContent(
     ) {
         items(
             items = words,
-            key = { word ->
-                word.wordId
-            }
+            key = { word -> word.wordId }
         ) { word ->
             WordItem(word = word)
         }
     }
 }
 
-/**
- * Card hiển thị một từ vựng.
- */
 @Composable
 private fun WordItem(
     word: Word
@@ -184,6 +409,18 @@ private fun WordItem(
                 )
             }
 
+            if (!word.description.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Mô tả: ${word.description}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
             if (!word.example.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -207,13 +444,34 @@ private fun WordItem(
                     overflow = TextOverflow.Ellipsis
                 )
             }
+
+            if (!word.relatedWords.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Từ liên quan: ${word.relatedWords}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            if (!word.note.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Ghi chú: ${word.note}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }
 
-/**
- * Nội dung hiển thị khi chưa có từ vựng nào trong bộ từ.
- */
 @Composable
 private fun EmptyWordsContent(
     onAddWordClick: () -> Unit
@@ -234,7 +492,7 @@ private fun EmptyWordsContent(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Hãy thêm từ đầu tiên vào bộ từ này.",
+            text = "Hãy thêm từ đầu tiên hoặc import từ file CSV/Excel.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -249,9 +507,6 @@ private fun EmptyWordsContent(
     }
 }
 
-/**
- * Nội dung hiển thị khi đang tải danh sách từ.
- */
 @Composable
 private fun LoadingWordsContent() {
     Box(

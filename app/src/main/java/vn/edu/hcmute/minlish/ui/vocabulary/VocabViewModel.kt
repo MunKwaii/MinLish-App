@@ -10,20 +10,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import vn.edu.hcmute.minlish.data.local.entity.Deck
+import vn.edu.hcmute.minlish.data.local.entity.Word
+import vn.edu.hcmute.minlish.data.remote.dictionary.DictionaryApiDataSource
 import vn.edu.hcmute.minlish.data.repository.VocabularyRepository
 
-/**
- * ViewModel xử lý nghiệp vụ cho module quản lý từ vựng.
- *
- * Nhiệm vụ chính:
- * - Tải danh sách bộ từ vựng theo người dùng.
- * - Tải danh sách từ vựng theo bộ từ.
- * - Kiểm tra dữ liệu nhập trước khi tạo bộ từ.
- * - Kiểm tra dữ liệu nhập trước khi thêm từ vựng.
- *
- * UI không nên gọi trực tiếp DAO hoặc Repository.
- * UI chỉ gửi sự kiện về ViewModel, sau đó ViewModel cập nhật lại state.
- */
 class VocabViewModel(
     private val vocabularyRepository: VocabularyRepository
 ) : ViewModel() {
@@ -34,11 +24,7 @@ class VocabViewModel(
     private var deckJob: Job? = null
     private var wordJob: Job? = null
 
-    /**
-     * Tải toàn bộ bộ từ vựng thuộc về người dùng hiện tại.
-     *
-     * userId sẽ được lấy từ thông tin đăng nhập của người dùng.
-     */
+    // Tải danh sách bộ từ vựng theo user hiện tại
     fun loadDecks(userId: Int) {
         deckJob?.cancel()
 
@@ -67,9 +53,7 @@ class VocabViewModel(
         }
     }
 
-    /**
-     * Chọn một bộ từ và tải danh sách từ vựng bên trong bộ từ đó.
-     */
+    // Chọn deck và tải danh sách từ thuộc deck đó
     fun selectDeck(deck: Deck) {
         _uiState.update {
             it.copy(
@@ -83,9 +67,7 @@ class VocabViewModel(
         loadWords(deck.deckId)
     }
 
-    /**
-     * Tải danh sách từ vựng theo mã bộ từ.
-     */
+    // Tải danh sách từ vựng theo deckId
     fun loadWords(deckId: Int) {
         wordJob?.cancel()
 
@@ -114,9 +96,7 @@ class VocabViewModel(
         }
     }
 
-    /**
-     * Tạo một bộ từ vựng mới.
-     */
+    // Tạo bộ từ vựng mới
     fun createDeck(
         userId: Int,
         name: String,
@@ -132,7 +112,11 @@ class VocabViewModel(
 
         viewModelScope.launch {
             _uiState.update {
-                it.copy(isLoading = true, errorMessage = null, successMessage = null)
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                    successMessage = null
+                )
             }
 
             val result = vocabularyRepository.createDeck(
@@ -162,9 +146,7 @@ class VocabViewModel(
         }
     }
 
-    /**
-     * Thêm một từ vựng mới vào bộ từ đang chọn.
-     */
+    // Thêm từ vựng thủ công từ form nhập liệu
     fun addWord(
         deckId: Int,
         word: String,
@@ -192,7 +174,11 @@ class VocabViewModel(
 
         viewModelScope.launch {
             _uiState.update {
-                it.copy(isLoading = true, errorMessage = null, successMessage = null)
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                    successMessage = null
+                )
             }
 
             val result = vocabularyRepository.addWord(
@@ -227,12 +213,111 @@ class VocabViewModel(
         }
     }
 
-    /**
-     * Xóa thông báo sau khi UI đã hiển thị xong.
-     *
-     * Hàm này giúp tránh việc Toast/Snackbar bị hiển thị lại
-     * khi màn hình được recomposition.
-     */
+    // Import danh sách từ bằng Dictionary API rồi lưu vào Room Database
+    fun importWordsFromDictionary(deckId: Int, words: List<String>) {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                    successMessage = null
+                )
+            }
+
+            try {
+                val dictionaryApi = DictionaryApiDataSource()
+                val importedWords = mutableListOf<Word>()
+
+                for (rawWord in words) {
+                    val cleanWord = rawWord.trim()
+                    if (cleanWord.isBlank()) continue
+
+                    val lookup = dictionaryApi.lookupWord(cleanWord)
+                    if (!lookup.exists) continue
+
+                    val firstResult = lookup.results?.firstOrNull() ?: continue
+
+                    val firstMeaning = firstResult.meanings
+                        ?.firstOrNull { !it.definition.isNullOrBlank() }
+                        ?: continue
+
+                    val pronunciation = firstResult.pronunciations
+                        ?.firstOrNull()
+                        ?.ipa
+                        .orEmpty()
+
+                    val meaning = firstMeaning.definition.orEmpty()
+                    if (meaning.isBlank()) continue
+
+                    val description = listOfNotNull(
+                        firstMeaning.pos,
+                        firstMeaning.source
+                    ).joinToString(" - ").ifBlank { null }
+
+                    val relatedWords = firstResult.relations
+                        ?.mapNotNull { it.related_word }
+                        ?.distinct()
+                        ?.joinToString(", ")
+                        ?.ifBlank { null }
+
+                    importedWords.add(
+                        Word(
+                            deckId = deckId,
+                            word = lookup.word?.ifBlank { cleanWord } ?: cleanWord,
+                            pronunciation = pronunciation,
+                            meaning = meaning,
+                            description = description,
+                            example = firstMeaning.example,
+                            collocations = null,
+                            relatedWords = relatedWords,
+                            note = "Imported from dict.minhqnd.com"
+                        )
+                    )
+                }
+
+                if (importedWords.isEmpty()) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = "Không tìm thấy từ hợp lệ để import"
+                        )
+                    }
+                    return@launch
+                }
+
+                val result = vocabularyRepository.importWords(deckId, importedWords)
+
+                result
+                    .onSuccess {
+                        loadWords(deckId)
+
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                successMessage = "Đã import ${importedWords.size} từ vựng"
+                            )
+                        }
+                    }
+                    .onFailure { exception ->
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = exception.message ?: "Import thất bại"
+                            )
+                        }
+                    }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = e.message ?: "Không thể import từ dictionary"
+                    )
+                }
+            }
+        }
+    }
+
+    // Xóa thông báo sau khi UI đã hiển thị xong
     fun clearMessage() {
         _uiState.update {
             it.copy(
@@ -243,12 +328,6 @@ class VocabViewModel(
     }
 }
 
-/**
- * Factory dùng để khởi tạo VocabViewModel với Repository.
- *
- * Vì VocabViewModel cần truyền VocabularyRepository vào constructor,
- * nên không thể dùng ViewModel mặc định không tham số.
- */
 class VocabViewModelFactory(
     private val vocabularyRepository: VocabularyRepository
 ) : ViewModelProvider.Factory {

@@ -16,6 +16,7 @@ import vn.edu.hcmute.minlish.data.repository.VocabularyRepository
 import vn.edu.hcmute.minlish.data.util.SettingsManager
 import java.text.SimpleDateFormat
 import java.util.Locale
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -81,6 +82,7 @@ class LearningViewModel(
                     )
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _uiState.update {
                     it.copy(
                         isLoading = false,

@@ -9,10 +9,15 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import vn.edu.hcmute.minlish.data.local.entity.FlashcardProgress
+import vn.edu.hcmute.minlish.data.local.entity.StudyProgress
 import vn.edu.hcmute.minlish.data.local.entity.Word
 import vn.edu.hcmute.minlish.data.repository.ProgressRepository
 import vn.edu.hcmute.minlish.data.repository.VocabularyRepository
 import vn.edu.hcmute.minlish.data.util.SettingsManager
+import java.text.SimpleDateFormat
+import java.util.Locale
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 enum class CardDifficulty {
     AGAIN, HARD, GOOD, EASY
@@ -39,6 +44,8 @@ class LearningViewModel(
 
     private val _uiState = MutableStateFlow(LearningUiState())
     val uiState: StateFlow<LearningUiState> = _uiState.asStateFlow()
+
+    private val progressMutex = Mutex()
 
     init {
         loadRealData()
@@ -117,9 +124,36 @@ class LearningViewModel(
         // 4. In log kiểm thử toán học
         println("SM-2 [Word: '${currentWord.word}']: Đánh giá $difficulty (Quality: $quality). EF cũ: ${currentProgress.easeFactor} -> EF mới: ${newProgress.easeFactor}. Interval cũ: ${currentProgress.interval} -> Interval mới: ${newProgress.interval} ngày.")
 
-        // 5. Lưu tiến trình mới vào SQLite DB thật bất đồng bộ
+        // 5. Lưu tiến trình mới và thống kê học tập hàng ngày vào SQLite DB thật bất đồng bộ
         viewModelScope.launch {
             progressRepository.saveFlashcardProgress(newProgress)
+
+            val isNewWord = currentState.progressMap[currentWord.wordId] == null
+            val isCorrect = difficulty != CardDifficulty.AGAIN
+
+            progressMutex.withLock {
+                val todayDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(System.currentTimeMillis())
+                val todayProgress = progressRepository.getProgressByDate(userId, todayDate)
+
+                val updatedProgress = if (todayProgress == null) {
+                    StudyProgress(
+                        userId = userId,
+                        date = todayDate,
+                        newWordsLearned = if (isNewWord) 1 else 0,
+                        wordsReviewed = if (isNewWord) 0 else 1,
+                        correctAnswers = if (isCorrect) 1 else 0,
+                        totalAnswers = 1
+                    )
+                } else {
+                    todayProgress.copy(
+                        newWordsLearned = todayProgress.newWordsLearned + (if (isNewWord) 1 else 0),
+                        wordsReviewed = todayProgress.wordsReviewed + (if (isNewWord) 0 else 1),
+                        correctAnswers = todayProgress.correctAnswers + (if (isCorrect) 1 else 0),
+                        totalAnswers = todayProgress.totalAnswers + 1
+                    )
+                }
+                progressRepository.recordStudySession(updatedProgress)
+            }
         }
 
         // 6. Cập nhật Map tiến trình học tập tạm thời trên UI

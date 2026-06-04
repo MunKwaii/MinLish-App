@@ -21,6 +21,8 @@ import vn.edu.hcmute.minlish.ui.auth.LoginScreen
 import vn.edu.hcmute.minlish.ui.auth.ProfileScreen
 import vn.edu.hcmute.minlish.ui.auth.RegisterScreen
 import vn.edu.hcmute.minlish.ui.dashboard.DashboardScreen
+import vn.edu.hcmute.minlish.ui.dashboard.DashboardViewModel
+import vn.edu.hcmute.minlish.ui.learning.FlashcardScreen
 import vn.edu.hcmute.minlish.ui.vocabulary.AddWordScreen
 import vn.edu.hcmute.minlish.ui.vocabulary.DeckListScreen
 import vn.edu.hcmute.minlish.ui.vocabulary.VocabViewModel
@@ -36,7 +38,10 @@ import vn.edu.hcmute.minlish.ui.vocabulary.WordListScreen
 fun NavGraph(
     navController: NavHostController,
     authViewModel: AuthViewModel,
-    vocabViewModel: VocabViewModel
+    vocabViewModel: VocabViewModel,
+    dashboardViewModel: DashboardViewModel,
+    onToggleTheme: () -> Unit,
+    isDarkTheme: Boolean
 ) {
     NavHost(
         navController = navController,
@@ -81,6 +86,7 @@ fun NavGraph(
         composable(Screen.Dashboard.route) {
             DashboardScreen(
                 authViewModel = authViewModel,
+                dashboardViewModel = dashboardViewModel,
                 onLogout = {
                     authViewModel.logout()
 
@@ -93,15 +99,28 @@ fun NavGraph(
                 onNavigateToProfile = {
                     navController.navigate(Screen.Profile.route)
                 },
+                onNavigateToLearning = {
+                    navController.navigate(Screen.Learning.route)
+                },
                 onNavigateToVocabulary = {
                     navController.navigate(Screen.Vocabulary.route)
-                }
+                },
+                onToggleTheme = onToggleTheme,
+                isDarkTheme = isDarkTheme
             )
         }
 
         composable(Screen.Profile.route) {
             ProfileScreen(
                 authViewModel = authViewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.Learning.route) {
+            FlashcardScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }

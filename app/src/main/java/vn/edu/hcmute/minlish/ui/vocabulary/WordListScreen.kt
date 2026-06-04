@@ -66,7 +66,6 @@ fun WordListScreen(
     var importMenuExpanded by remember { mutableStateOf(false) }
     var exportMenuExpanded by remember { mutableStateOf(false) }
 
-    // Chọn file CSV từ bộ nhớ điện thoại rồi import bằng Dictionary API
     val importCsvLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
@@ -91,7 +90,6 @@ fun WordListScreen(
         }
     }
 
-    // Chọn file Excel từ bộ nhớ điện thoại rồi import bằng Dictionary API
     val importExcelLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
@@ -116,7 +114,6 @@ fun WordListScreen(
         }
     }
 
-    // Tạo file CSV và ghi danh sách từ hiện tại ra bộ nhớ điện thoại
     val exportCsvLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/csv")
     ) { uri ->
@@ -141,7 +138,6 @@ fun WordListScreen(
         }
     }
 
-    // Tạo file Excel và ghi danh sách từ hiện tại ra bộ nhớ điện thoại
     val exportExcelLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument(
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -198,7 +194,9 @@ fun WordListScreen(
                     )
                 },
                 navigationIcon = {
-                    TextButton(onClick = onNavigateBack) {
+                    TextButton(
+                        onClick = onNavigateBack
+                    ) {
                         Text(
                             text = "Quay lại",
                             color = MaterialTheme.colorScheme.onPrimary
@@ -226,7 +224,7 @@ fun WordListScreen(
                         ) {
                             DropdownMenuItem(
                                 text = {
-                                    Text("Import CSV")
+                                    Text(text = "Import CSV")
                                 },
                                 onClick = {
                                     importMenuExpanded = false
@@ -244,7 +242,7 @@ fun WordListScreen(
 
                             DropdownMenuItem(
                                 text = {
-                                    Text("Import Excel")
+                                    Text(text = "Import Excel")
                                 },
                                 onClick = {
                                     importMenuExpanded = false
@@ -282,7 +280,7 @@ fun WordListScreen(
                             DropdownMenuItem(
                                 enabled = uiState.words.isNotEmpty(),
                                 text = {
-                                    Text("Export CSV")
+                                    Text(text = "Export CSV")
                                 },
                                 onClick = {
                                     exportMenuExpanded = false
@@ -293,7 +291,7 @@ fun WordListScreen(
                             DropdownMenuItem(
                                 enabled = uiState.words.isNotEmpty(),
                                 text = {
-                                    Text("Export Excel")
+                                    Text(text = "Export Excel")
                                 },
                                 onClick = {
                                     exportMenuExpanded = false

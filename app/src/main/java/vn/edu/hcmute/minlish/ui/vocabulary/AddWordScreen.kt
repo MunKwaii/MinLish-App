@@ -124,6 +124,7 @@ fun AddWordScreen(
                 title = {
                     Text(
                         text = "Thêm từ vựng",
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -131,9 +132,13 @@ fun AddWordScreen(
                     TextButton(
                         onClick = onNavigateBack
                     ) {
-                        Text(text = "Quay lại")
+                        Text(text = "Quay lại", color = MaterialTheme.colorScheme.onPrimary)
                     }
-                }
+                },
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                )
             )
         },
         snackbarHost = {
@@ -286,6 +291,10 @@ fun AddWordScreen(
                         }
                     },
                     enabled = !uiState.isLoading,
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp)

@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -28,7 +29,21 @@ fun ProfileScreen(
     val currentUser by authViewModel.currentUser.collectAsState()
     val uiState by authViewModel.uiState.collectAsState()
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val app = context.applicationContext as vn.edu.hcmute.minlish.MinLishApplication
+    val settingsManager = remember { app.settingsManager }
+    val currentLimit by settingsManager.newWordsLimitFlow.collectAsState(initial = 10)
+
+    val coroutineScope = rememberCoroutineScope()
+
     var name by remember { mutableStateOf(currentUser?.name ?: "") }
+    var newWordsLimit by remember { mutableStateOf(10) }
+    var limitInputText by remember { mutableStateOf("10") }
+
+    LaunchedEffect(currentLimit) {
+        newWordsLimit = currentLimit
+        limitInputText = currentLimit.toString()
+    }
     
     val userTypes = listOf(
         "Học sinh, sinh viên",
@@ -261,6 +276,62 @@ fun ProfileScreen(
                             }
                         }
 
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Cài đặt học tập
+                        Text(
+                            text = "Cài đặt học tập:",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.align(Alignment.Start)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Slider(
+                                value = newWordsLimit.toFloat(),
+                                onValueChange = { floatVal ->
+                                    val intVal = floatVal.toInt().coerceIn(5, 50)
+                                    newWordsLimit = intVal
+                                    limitInputText = intVal.toString()
+                                },
+                                valueRange = 5f..50f,
+                                steps = 45,
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            OutlinedTextField(
+                                value = limitInputText,
+                                onValueChange = { text ->
+                                    val filtered = text.filter { it.isDigit() }
+                                    limitInputText = filtered
+                                    val parsed = filtered.toIntOrNull()
+                                    if (parsed != null) {
+                                        newWordsLimit = parsed.coerceIn(5, 50)
+                                    }
+                                },
+                                label = { Text("Số từ") },
+                                singleLine = true,
+                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                                ),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.width(90.dp)
+                            )
+                        }
+
+                        Text(
+                            text = "Giới hạn từ mới mỗi ngày: $newWordsLimit từ (Tối thiểu 5, tối đa 50)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.align(Alignment.Start).padding(start = 4.dp, top = 4.dp)
+                        )
+
                         Spacer(modifier = Modifier.height(24.dp))
 
                         // Hiển thị lỗi nếu có
@@ -276,12 +347,20 @@ fun ProfileScreen(
                         // Nút Lưu thay đổi
                         Button(
                             onClick = {
+                                val finalLimit = limitInputText.toIntOrNull()?.coerceIn(5, 50) ?: 10
+                                newWordsLimit = finalLimit
+                                limitInputText = finalLimit.toString()
+
                                 authViewModel.updateProfile(
                                     name = name.trim(),
                                     userType = selectedUserType,
                                     learningGoal = selectedGoal,
                                     level = selectedLevel
                                 )
+
+                                coroutineScope.launch {
+                                    settingsManager.saveNewWordsLimit(finalLimit)
+                                }
                             },
                             enabled = uiState !is AuthUiState.Loading,
                             colors = ButtonDefaults.buttonColors(

@@ -144,7 +144,8 @@ fun NavGraph(
                         userId = user.userId,
                         deckId = deckId,
                         vocabularyRepository = app.vocabularyRepository,
-                        progressRepository = app.progressRepository
+                        progressRepository = app.progressRepository,
+                        settingsManager = app.settingsManager
                     )
                 )
                 FlashcardScreen(

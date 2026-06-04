@@ -3,6 +3,7 @@ package vn.edu.hcmute.minlish.data.repository.impl
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import vn.edu.hcmute.minlish.data.local.dao.StudyProgressDao
+import vn.edu.hcmute.minlish.data.local.entity.FlashcardProgress
 import vn.edu.hcmute.minlish.data.local.entity.StudyProgress
 import vn.edu.hcmute.minlish.data.repository.ProgressRepository
 
@@ -66,4 +67,17 @@ class ProgressRepositoryImpl(
             }
         }
     }
+
+    override suspend fun getFlashcardProgressByUser(userId: Int): List<FlashcardProgress> {
+        return withContext(Dispatchers.IO) {
+            studyProgressDao.getFlashcardProgressByUser(userId)
+        }
+    }
+
+    override suspend fun getTotalWordCountByUser(userId: Int): Int {
+        return withContext(Dispatchers.IO) {
+            studyProgressDao.getTotalWordCountByUser(userId)
+        }
+    }
 }
+

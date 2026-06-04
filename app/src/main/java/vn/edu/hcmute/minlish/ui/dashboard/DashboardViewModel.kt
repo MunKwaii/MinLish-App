@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import vn.edu.hcmute.minlish.data.local.entity.FlashcardProgress
 import vn.edu.hcmute.minlish.data.repository.ProgressRepository
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -37,6 +38,35 @@ data class RetentionData(
 )
 
 /**
+ * Dữ liệu phân bố Card Maturity theo Anki — dùng cho biểu đồ và level estimation.
+ *
+ * Phân loại theo interval của thuật toán SM-2:
+ * - New: Chưa có FlashcardProgress (chưa từng học)
+ * - Learning: interval < 1 ngày (đang học lần đầu)
+ * - Young: interval 1–21 ngày (nhớ ngắn hạn)
+ * - Mature: interval > 21 ngày (nhớ dài hạn, đã thuộc)
+ */
+data class CardMaturityData(
+    val newCount: Int = 0,
+    val learningCount: Int = 0,
+    val youngCount: Int = 0,
+    val matureCount: Int = 0,
+    val totalCount: Int = 0
+) {
+    val maturePercent: Float
+        get() = if (totalCount > 0) (matureCount.toFloat() / totalCount) * 100f else 0f
+
+    val youngPercent: Float
+        get() = if (totalCount > 0) (youngCount.toFloat() / totalCount) * 100f else 0f
+
+    val learningPercent: Float
+        get() = if (totalCount > 0) (learningCount.toFloat() / totalCount) * 100f else 0f
+
+    val newPercent: Float
+        get() = if (totalCount > 0) (newCount.toFloat() / totalCount) * 100f else 0f
+}
+
+/**
  * State tổng hợp của màn hình Dashboard.
  */
 data class DashboardUiState(
@@ -45,6 +75,7 @@ data class DashboardUiState(
     val currentStreak: Int = 0,
     val accuracyPercent: Float = 0f,
     val estimatedLevel: String = "Beginner",
+    val cardMaturity: CardMaturityData = CardMaturityData(),
     val dailyActivity: List<DailyActivityData> = emptyList(),
     val retentionData: List<RetentionData> = emptyList()
 )
@@ -137,8 +168,13 @@ class DashboardViewModel(
                     )
                 }
 
-                // 7. Đánh giá trình độ
-                val level = estimateLevel(totalWords, accuracy, streak)
+                // 7. Lấy dữ liệu FlashcardProgress để phân loại maturity (Anki)
+                val flashcardProgressList = progressRepository.getFlashcardProgressByUser(userId)
+                val totalWordCount = progressRepository.getTotalWordCountByUser(userId)
+                val maturity = classifyCardMaturity(flashcardProgressList, totalWordCount)
+
+                // 8. Đánh giá trình độ theo Card Maturity (Anki-style)
+                val level = estimateLevel(maturity, accuracy, streak)
 
                 _uiState.value = DashboardUiState(
                     isLoading = false,
@@ -146,6 +182,7 @@ class DashboardViewModel(
                     currentStreak = streak,
                     accuracyPercent = accuracy,
                     estimatedLevel = level,
+                    cardMaturity = maturity,
                     dailyActivity = filledDailyActivity,
                     retentionData = filledRetention
                 )
@@ -199,46 +236,91 @@ class DashboardViewModel(
     }
 
     /**
-     * Đánh giá trình độ dựa trên 3 tiêu chí.
+     * Phân loại thẻ theo Card Maturity (theo cách Anki hoạt động).
      *
-     * Hệ thống điểm:
-     * - Mỗi tiêu chí cho điểm 1 (Beginner), 2 (Intermediate), 3 (Advanced)
-     * - Lấy trung bình rồi phân loại
-     *
-     * | Tiêu chí        | Beginner  | Intermediate | Advanced |
-     * |-----------------|-----------|--------------|----------|
-     * | Tổng từ đã học  | < 50      | 50–200       | > 200    |
-     * | Accuracy        | < 60%     | 60–80%       | > 80%    |
-     * | Streak          | < 3 ngày  | 3–14 ngày    | > 14 ngày|
+     * Anki phân loại thẻ dựa trên interval (khoảng cách ôn tập):
+     * - New: Thẻ chưa có trong flashcard_progress (chưa từng học)
+     * - Learning: interval < 1 ngày (đang trong quá trình học lần đầu)
+     * - Young: interval từ 1 đến 21 ngày (đã nhớ nhưng chưa chắc chắn)
+     * - Mature: interval > 21 ngày (đã thuộc, ghi nhớ dài hạn)
      */
-    private fun estimateLevel(totalWords: Int, accuracy: Float, streak: Int): String {
-        // Điểm cho số từ đã học
-        val wordScore = when {
-            totalWords >= 200 -> 3
-            totalWords >= 50 -> 2
+    private fun classifyCardMaturity(
+        flashcardProgressList: List<FlashcardProgress>,
+        totalWordCount: Int
+    ): CardMaturityData {
+        if (totalWordCount == 0) return CardMaturityData()
+
+        var learningCount = 0
+        var youngCount = 0
+        var matureCount = 0
+
+        for (progress in flashcardProgressList) {
+            when {
+                progress.interval > 21 -> matureCount++
+                progress.interval >= 1 -> youngCount++
+                else -> learningCount++
+            }
+        }
+
+        // Từ chưa có trong flashcard_progress = New
+        val newCount = (totalWordCount - flashcardProgressList.size).coerceAtLeast(0)
+
+        return CardMaturityData(
+            newCount = newCount,
+            learningCount = learningCount,
+            youngCount = youngCount,
+            matureCount = matureCount,
+            totalCount = totalWordCount
+        )
+    }
+
+    /**
+     * Đánh giá trình độ theo thuật toán Card Maturity của Anki.
+     *
+     * Kết hợp 3 tiêu chí:
+     * 1. % Mature cards (trọng số chính — phản ánh ghi nhớ dài hạn)
+     * 2. Accuracy (% trả lời đúng)
+     * 3. Streak (chuỗi ngày học liên tục)
+     *
+     * Hệ thống điểm (mỗi tiêu chí cho 1–3 điểm):
+     * | Tiêu chí       | Beginner (1)  | Intermediate (2) | Advanced (3) |
+     * |----------------|---------------|------------------|--------------|
+     * | % Mature cards | < 20%         | 20–60%           | > 60%        |
+     * | Accuracy       | < 60%         | 60–80%           | > 80%        |
+     * | Streak         | < 3 ngày      | 3–14 ngày        | > 14 ngày    |
+     */
+    private fun estimateLevel(
+        maturity: CardMaturityData,
+        accuracy: Float,
+        streak: Int
+    ): String {
+        // Tiêu chí 1: % Mature cards (trọng số x2 vì đây là yếu tố chính)
+        val maturityScore = when {
+            maturity.maturePercent >= 60f -> 3
+            maturity.maturePercent >= 20f -> 2
             else -> 1
         }
 
-        // Điểm cho accuracy
+        // Tiêu chí 2: Accuracy
         val accuracyScore = when {
             accuracy >= 80f -> 3
             accuracy >= 60f -> 2
             else -> 1
         }
 
-        // Điểm cho streak
+        // Tiêu chí 3: Streak
         val streakScore = when {
             streak >= 14 -> 3
             streak >= 3 -> 2
             else -> 1
         }
 
-        // Tính trung bình và phân loại
-        val average = (wordScore + accuracyScore + streakScore) / 3.0
+        // Maturity có trọng số x2 (vì nó phản ánh chính xác nhất trình độ thực)
+        val weightedAverage = (maturityScore * 2 + accuracyScore + streakScore) / 4.0
 
         return when {
-            average >= 2.5 -> "Advanced"
-            average >= 1.5 -> "Intermediate"
+            weightedAverage >= 2.5 -> "Advanced"
+            weightedAverage >= 1.5 -> "Intermediate"
             else -> "Beginner"
         }
     }

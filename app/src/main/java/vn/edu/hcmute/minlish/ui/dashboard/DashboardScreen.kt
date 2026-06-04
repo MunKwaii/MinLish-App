@@ -211,7 +211,14 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // ============================================
-                // SECTION 3: Biểu đồ hoạt động hàng ngày
+                // SECTION 3: Card Maturity (Anki-style)
+                // ============================================
+                CardMaturityChart(maturity = dashboardState.cardMaturity)
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // ============================================
+                // SECTION 4: Biểu đồ hoạt động hàng ngày
                 // ============================================
                 DailyActivityChart(data = dashboardState.dailyActivity)
 

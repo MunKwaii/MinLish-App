@@ -1,5 +1,6 @@
 package vn.edu.hcmute.minlish.data.repository
 
+import vn.edu.hcmute.minlish.data.local.entity.FlashcardProgress
 import vn.edu.hcmute.minlish.data.local.entity.StudyProgress
 
 /**
@@ -10,6 +11,7 @@ import vn.edu.hcmute.minlish.data.local.entity.StudyProgress
  * - Dữ liệu biểu đồ (daily activity, retention rate)
  * - Danh sách ngày học (để tính streak)
  * - Ghi nhận phiên học mới
+ * - Dữ liệu FlashcardProgress (để phân loại maturity theo Anki)
  */
 interface ProgressRepository {
 
@@ -37,4 +39,11 @@ interface ProgressRepository {
 
     // Ghi nhận phiên học
     suspend fun recordStudySession(progress: StudyProgress): Result<Long>
+
+    // Lấy toàn bộ FlashcardProgress của user (Anki maturity)
+    suspend fun getFlashcardProgressByUser(userId: Int): List<FlashcardProgress>
+
+    // Đếm tổng số từ trong tất cả bộ từ của user
+    suspend fun getTotalWordCountByUser(userId: Int): Int
 }
+

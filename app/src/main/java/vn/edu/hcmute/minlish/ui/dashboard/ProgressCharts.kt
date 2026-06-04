@@ -366,3 +366,196 @@ fun LevelBadge(
         )
     }
 }
+
+// Màu sắc cho Card Maturity (theo Anki)
+private val MaturityNew = Color(0xFF90CAF9)       // Xanh nhạt — New
+private val MaturityLearning = Color(0xFFFF8A65)   // Cam — Learning
+private val MaturityYoung = Color(0xFF81C784)      // Xanh lá nhạt — Young
+private val MaturityMature = Color(0xFF4CAF50)     // Xanh lá đậm — Mature
+
+/**
+ * Biểu đồ Card Maturity theo phong cách Anki.
+ *
+ * Hiển thị thanh ngang stacked bar thể hiện phân bố:
+ * New → Learning → Young → Mature
+ */
+@Composable
+fun CardMaturityChart(
+    maturity: CardMaturityData,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Card Maturity (Anki)",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF202124)
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Phân bố trạng thái thẻ dựa trên interval SM-2",
+                fontSize = 11.sp,
+                color = Color.Gray
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Stacked horizontal bar
+            if (maturity.totalCount > 0) {
+                // Animation
+                var animationTriggered by remember { mutableStateOf(false) }
+                val animationProgress by animateFloatAsState(
+                    targetValue = if (animationTriggered) 1f else 0f,
+                    animationSpec = tween(durationMillis = 800),
+                    label = "maturityBarAnimation"
+                )
+                LaunchedEffect(Unit) { animationTriggered = true }
+
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(32.dp)
+                ) {
+                    val barHeight = size.height
+                    val totalWidth = size.width * animationProgress
+                    val cornerRadius = CornerRadius(8.dp.toPx())
+
+                    // Background
+                    drawRoundRect(
+                        color = Color(0xFFF5F5F5),
+                        size = Size(size.width, barHeight),
+                        cornerRadius = cornerRadius
+                    )
+
+                    // Tính width từng phần
+                    val newWidth = (maturity.newPercent / 100f) * totalWidth
+                    val learningWidth = (maturity.learningPercent / 100f) * totalWidth
+                    val youngWidth = (maturity.youngPercent / 100f) * totalWidth
+                    val matureWidth = (maturity.maturePercent / 100f) * totalWidth
+
+                    var currentX = 0f
+
+                    // Vẽ New
+                    if (newWidth > 0) {
+                        drawRect(
+                            color = MaturityNew,
+                            topLeft = Offset(currentX, 0f),
+                            size = Size(newWidth, barHeight)
+                        )
+                        currentX += newWidth
+                    }
+
+                    // Vẽ Learning
+                    if (learningWidth > 0) {
+                        drawRect(
+                            color = MaturityLearning,
+                            topLeft = Offset(currentX, 0f),
+                            size = Size(learningWidth, barHeight)
+                        )
+                        currentX += learningWidth
+                    }
+
+                    // Vẽ Young
+                    if (youngWidth > 0) {
+                        drawRect(
+                            color = MaturityYoung,
+                            topLeft = Offset(currentX, 0f),
+                            size = Size(youngWidth, barHeight)
+                        )
+                        currentX += youngWidth
+                    }
+
+                    // Vẽ Mature
+                    if (matureWidth > 0) {
+                        drawRect(
+                            color = MaturityMature,
+                            topLeft = Offset(currentX, 0f),
+                            size = Size(matureWidth, barHeight)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Legend với số lượng
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    MaturityLegendItem(
+                        color = MaturityNew,
+                        label = "New",
+                        count = maturity.newCount,
+                        percent = maturity.newPercent
+                    )
+                    MaturityLegendItem(
+                        color = MaturityLearning,
+                        label = "Learning",
+                        count = maturity.learningCount,
+                        percent = maturity.learningPercent
+                    )
+                    MaturityLegendItem(
+                        color = MaturityYoung,
+                        label = "Young",
+                        count = maturity.youngCount,
+                        percent = maturity.youngPercent
+                    )
+                    MaturityLegendItem(
+                        color = MaturityMature,
+                        label = "Mature",
+                        count = maturity.matureCount,
+                        percent = maturity.maturePercent
+                    )
+                }
+            } else {
+                Text(
+                    text = "Chưa có dữ liệu",
+                    fontSize = 13.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Item legend cho biểu đồ Card Maturity.
+ */
+@Composable
+private fun MaturityLegendItem(
+    color: Color,
+    label: String,
+    count: Int,
+    percent: Float
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Canvas(modifier = Modifier.size(8.dp)) {
+                drawCircle(color = color)
+            }
+            Spacer(modifier = Modifier.width(3.dp))
+            Text(text = label, fontSize = 10.sp, color = Color.Gray)
+        }
+        Text(
+            text = "$count",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF202124)
+        )
+        Text(
+            text = "${percent.toInt()}%",
+            fontSize = 10.sp,
+            color = Color.Gray
+        )
+    }
+}
+

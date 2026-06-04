@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import vn.edu.hcmute.minlish.data.local.entity.FlashcardProgress
 import vn.edu.hcmute.minlish.data.local.entity.StudyProgress
 
 @Dao
@@ -51,4 +52,19 @@ interface StudyProgressDao {
     // Cập nhật bản ghi tiến trình
     @Update
     suspend fun updateProgress(progress: StudyProgress)
+
+    // ============================================================
+    // Flashcard Progress — dùng cho thuật toán Card Maturity (Anki)
+    // ============================================================
+
+    // Lấy toàn bộ FlashcardProgress của user (để phân loại maturity)
+    @Query("SELECT * FROM flashcard_progress WHERE userId = :userId")
+    suspend fun getFlashcardProgressByUser(userId: Int): List<FlashcardProgress>
+
+    // Đếm tổng số từ trong tất cả bộ từ của user (JOIN decks → words)
+    @Query(
+        "SELECT COUNT(*) FROM words w INNER JOIN decks d ON w.deckId = d.deckId WHERE d.userId = :userId"
+    )
+    suspend fun getTotalWordCountByUser(userId: Int): Int
 }
+

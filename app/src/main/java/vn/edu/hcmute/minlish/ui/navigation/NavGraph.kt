@@ -39,7 +39,9 @@ fun NavGraph(
     navController: NavHostController,
     authViewModel: AuthViewModel,
     vocabViewModel: VocabViewModel,
-    dashboardViewModel: DashboardViewModel
+    dashboardViewModel: DashboardViewModel,
+    onToggleTheme: () -> Unit,
+    isDarkTheme: Boolean
 ) {
     NavHost(
         navController = navController,
@@ -102,7 +104,9 @@ fun NavGraph(
                 },
                 onNavigateToVocabulary = {
                     navController.navigate(Screen.Vocabulary.route)
-                }
+                },
+                onToggleTheme = onToggleTheme,
+                isDarkTheme = isDarkTheme
             )
         }
 

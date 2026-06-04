@@ -40,7 +40,9 @@ fun DashboardScreen(
     onLogout: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToLearning: () -> Unit,
-    onNavigateToVocabulary: () -> Unit
+    onNavigateToVocabulary: () -> Unit,
+    onToggleTheme: () -> Unit,
+    isDarkTheme: Boolean
 ) {
     val currentUser by authViewModel.currentUser.collectAsState()
     val dashboardState by dashboardViewModel.uiState.collectAsState()
@@ -65,6 +67,12 @@ fun DashboardScreen(
                     )
                 },
                 actions = {
+                    IconButton(onClick = onToggleTheme) {
+                        Text(
+                            text = if (isDarkTheme) "🌞" else "🌙",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
                     IconButton(onClick = onLogout) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ExitToApp,

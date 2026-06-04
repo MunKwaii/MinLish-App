@@ -17,8 +17,12 @@ import vn.edu.hcmute.minlish.ui.dashboard.DashboardViewModel
 import vn.edu.hcmute.minlish.ui.dashboard.DashboardViewModelFactory
 import vn.edu.hcmute.minlish.ui.navigation.NavGraph
 import vn.edu.hcmute.minlish.ui.theme.MinLishTheme
+import vn.edu.hcmute.minlish.ui.theme.ThemeViewModel
 import vn.edu.hcmute.minlish.ui.vocabulary.VocabViewModel
 import vn.edu.hcmute.minlish.ui.vocabulary.VocabViewModelFactory
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.foundation.isSystemInDarkTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -37,6 +41,8 @@ class MainActivity : ComponentActivity() {
         DashboardViewModelFactory(app.progressRepository)
     }
 
+    private val themeViewModel: ThemeViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -45,22 +51,21 @@ class MainActivity : ComponentActivity() {
         authViewModel.autoLogin()
 
         setContent {
-            MinLishTheme {
-                val navController = rememberNavController()
+            val isDarkModePref by themeViewModel.isDarkMode.collectAsState()
+            val isDarkTheme = isDarkModePref ?: isSystemInDarkTheme()
 
-                Scaffold(
+            MinLishTheme(darkTheme = isDarkTheme) {
+                Box(
                     modifier = Modifier.fillMaxSize()
-                ) { innerPadding ->
-                    Box(
-                        modifier = Modifier.padding(innerPadding)
-                    ) {
-                        NavGraph(
-                            navController = navController,
-                            authViewModel = authViewModel,
-                            vocabViewModel = vocabViewModel,
-                            dashboardViewModel = dashboardViewModel
-                        )
-                    }
+                ) {
+                    NavGraph(
+                        navController = rememberNavController(),
+                        authViewModel = authViewModel,
+                        vocabViewModel = vocabViewModel,
+                        dashboardViewModel = dashboardViewModel,
+                        onToggleTheme = { themeViewModel.toggleTheme() },
+                        isDarkTheme = isDarkTheme
+                    )
                 }
             }
         }

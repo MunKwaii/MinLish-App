@@ -408,7 +408,7 @@ fun CardBackContent(word: Word) {
             Icon(
                 imageVector = Icons.Default.Star,
                 contentDescription = null,
-                tint = Color(0xFFFFB300),
+                tint = MaterialTheme.colorScheme.tertiary,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
@@ -416,7 +416,7 @@ fun CardBackContent(word: Word) {
                 text = "Ý NGHĨA",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFFFFB300),
+                color = MaterialTheme.colorScheme.tertiary,
                 letterSpacing = 2.sp
             )
         }
@@ -562,7 +562,7 @@ fun ActionButtonsLayout(
             EvaluationButton(
                 text = "Lặp lại",
                 time = "<1m",
-                color = Color(0xFFE53935), // Red
+                color = MaterialTheme.colorScheme.error, // Catppuccin Red
                 onClick = { onEvaluateClick(CardDifficulty.AGAIN) },
                 modifier = Modifier.weight(weight)
             )
@@ -571,7 +571,7 @@ fun ActionButtonsLayout(
             EvaluationButton(
                 text = "Khó",
                 time = "12h",
-                color = Color(0xFFFB8C00), // Orange
+                color = MaterialTheme.colorScheme.tertiary, // Catppuccin Peach
                 onClick = { onEvaluateClick(CardDifficulty.HARD) },
                 modifier = Modifier.weight(weight)
             )
@@ -580,7 +580,9 @@ fun ActionButtonsLayout(
             EvaluationButton(
                 text = "Tốt",
                 time = "2d",
-                color = Color(0xFF1E88E5), // Blue
+                color = if (androidx.compose.foundation.isSystemInDarkTheme()) 
+                    vn.edu.hcmute.minlish.ui.theme.CatppuccinMochaSapphire 
+                else vn.edu.hcmute.minlish.ui.theme.CatppuccinLatteSapphire, // Catppuccin Sapphire
                 onClick = { onEvaluateClick(CardDifficulty.GOOD) },
                 modifier = Modifier.weight(weight)
             )
@@ -589,7 +591,7 @@ fun ActionButtonsLayout(
             EvaluationButton(
                 text = "Dễ",
                 time = "4d",
-                color = Color(0xFF43A047), // Green
+                color = MaterialTheme.colorScheme.secondary, // Catppuccin Green
                 onClick = { onEvaluateClick(CardDifficulty.EASY) },
                 modifier = Modifier.weight(weight)
             )
@@ -718,7 +720,7 @@ fun borderStrokeForCard(isFlipped: Boolean): androidx.compose.foundation.BorderS
     return if (isFlipped) {
         androidx.compose.foundation.BorderStroke(
             1.dp,
-            Color(0xFFFFB300).copy(alpha = 0.4f)
+            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f)
         )
     } else {
         androidx.compose.foundation.BorderStroke(

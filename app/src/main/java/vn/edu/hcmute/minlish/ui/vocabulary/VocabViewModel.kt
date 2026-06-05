@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -43,6 +44,7 @@ class VocabViewModel(
                     }
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -86,6 +88,7 @@ class VocabViewModel(
                     }
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -307,6 +310,7 @@ class VocabViewModel(
                         }
                     }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -323,6 +327,47 @@ class VocabViewModel(
             it.copy(
                 successMessage = null,
                 errorMessage = null
+            )
+        }
+    }
+
+    // Tra cứu chi tiết từ vựng từ API
+    fun lookupWordDetails(word: String) {
+        if (word.isBlank()) return
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(isLookupLoading = true, lookupError = null)
+            }
+
+            try {
+                val dictionaryApi = DictionaryApiDataSource()
+                val result = dictionaryApi.lookupWord(word)
+                _uiState.update {
+                    it.copy(
+                        lookupResult = result,
+                        isLookupLoading = false
+                    )
+                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                _uiState.update {
+                    it.copy(
+                        isLookupLoading = false,
+                        lookupError = e.message ?: "Không thể tra cứu từ vựng"
+                    )
+                }
+            }
+        }
+    }
+
+    // Reset kết quả tra cứu từ vựng
+    fun resetLookupResult() {
+        _uiState.update {
+            it.copy(
+                lookupResult = null,
+                isLookupLoading = false,
+                lookupError = null
             )
         }
     }

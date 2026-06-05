@@ -2,6 +2,7 @@ package vn.edu.hcmute.minlish.data.repository.impl
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import vn.edu.hcmute.minlish.data.local.dao.DeckDao
 import vn.edu.hcmute.minlish.data.local.dao.WordDao
@@ -102,6 +103,36 @@ class VocabularyRepositoryImpl(
             } catch (e: Exception) {
                 Result.failure(e)
             }
+        }
+    }
+
+    override fun getAllWordsByUser(userId: Int): Flow<List<Word>> {
+        return wordDao.getAllWordsByUser(userId)
+    }
+
+    override suspend fun getDailyStudyDeck(
+        userId: Int,
+        deckId: Int?,
+        newWordsLimit: Int,
+        currentTimestamp: Long
+    ): List<Word> {
+        return withContext(Dispatchers.IO) {
+            val newWordsFlow = if (deckId != null && deckId != -1) {
+                wordDao.getNewWordsByDeck(userId, deckId, newWordsLimit)
+            } else {
+                wordDao.getAllNewWordsByUser(userId, newWordsLimit)
+            }
+
+            val dueWordsFlow = if (deckId != null && deckId != -1) {
+                wordDao.getWordsDueForReviewByDeck(userId, deckId, currentTimestamp)
+            } else {
+                wordDao.getAllWordsDueForReviewByUser(userId, currentTimestamp)
+            }
+
+            val newWords = newWordsFlow.first()
+            val dueWords = dueWordsFlow.first()
+
+            dueWords + newWords
         }
     }
 }

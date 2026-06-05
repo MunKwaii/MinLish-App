@@ -116,6 +116,9 @@ dependencies {
 
     // BCRYPT PASSWORD HASHING
     implementation("org.mindrot:jbcrypt:0.4")
+
+    // DATASTORE PREFERENCES
+    implementation(libs.datastore.preferences)
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {

@@ -29,6 +29,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -55,6 +59,7 @@ fun WordListScreen(
     viewModel: VocabViewModel,
     onNavigateBack: () -> Unit,
     onAddWordClick: () -> Unit,
+    onStartLearningClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -204,6 +209,16 @@ fun WordListScreen(
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = { onStartLearningClick(deckId) },
+                        enabled = uiState.words.isNotEmpty()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lightbulb,
+                            contentDescription = "Học Flashcard",
+                            tint = if (uiState.words.isNotEmpty()) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.4f)
+                        )
+                    }
                     Box {
                         TextButton(
                             onClick = {

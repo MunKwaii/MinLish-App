@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 import vn.edu.hcmute.minlish.data.local.entity.FlashcardProgress
 import vn.edu.hcmute.minlish.data.repository.ProgressRepository
 import java.text.SimpleDateFormat
@@ -187,6 +188,7 @@ class DashboardViewModel(
                     retentionData = filledRetention
                 )
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 // Nếu lỗi thì vẫn hiển thị dashboard với dữ liệu mặc định
                 _uiState.value = DashboardUiState(isLoading = false)
             }

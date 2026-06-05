@@ -150,7 +150,16 @@ fun FlashcardScreen(
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (uiState.isFinished) {
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            } else if (uiState.isFinished) {
                 FinishLayout(
                     onRestart = { viewModel.restartSession() },
                     onBack = onNavigateBack,
@@ -231,12 +240,42 @@ fun FlashcardScreen(
                     onEvaluateClick = { difficulty -> viewModel.evaluateCard(difficulty) }
                 )
             } else {
-                // Trạng thái danh sách rỗng (fallback)
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                // Trạng thái danh sách rỗng (hoặc lỗi tải)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Text(text = "Không có từ vựng nào để học!")
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = uiState.errorMessage ?: "Không có từ vựng nào để học!",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Hãy thêm từ vựng mới vào bộ từ này trước khi bắt đầu ôn tập.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.outline,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Button(
+                        onClick = onNavigateBack,
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(text = "Quay lại", fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }

@@ -18,12 +18,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     authViewModel: AuthViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    showBackButton: Boolean = false
 ) {
     val currentUser by authViewModel.currentUser.collectAsState()
     val uiState by authViewModel.uiState.collectAsState()
@@ -62,12 +64,14 @@ fun ProfileScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back Icon",
-                            tint = Color.White
-                        )
+                    if (showBackButton) {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back Icon",
+                                tint = Color.White
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -261,7 +265,7 @@ fun ProfileScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         // Hiển thị lỗi nếu có
                         if (uiState is AuthUiState.Error) {

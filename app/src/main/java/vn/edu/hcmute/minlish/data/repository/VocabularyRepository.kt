@@ -30,4 +30,13 @@ interface VocabularyRepository {
     ): Result<Long>
 
     suspend fun importWords(deckId: Int, words: List<Word>): Result<Unit>
+
+    fun getAllWordsByUser(userId: Int): Flow<List<Word>>
+
+    suspend fun getDailyStudyDeck(
+        userId: Int,
+        deckId: Int?,
+        newWordsLimit: Int,
+        currentTimestamp: Long
+    ): List<Word>
 }

@@ -1,12 +1,24 @@
 package vn.edu.hcmute.minlish.ui.learning
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import vn.edu.hcmute.minlish.data.local.entity.FlashcardProgress
+import vn.edu.hcmute.minlish.data.local.entity.StudyProgress
 import vn.edu.hcmute.minlish.data.local.entity.Word
+import vn.edu.hcmute.minlish.data.repository.ProgressRepository
+import vn.edu.hcmute.minlish.data.repository.VocabularyRepository
+import vn.edu.hcmute.minlish.data.util.SettingsManager
+import java.text.SimpleDateFormat
+import java.util.Locale
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 enum class CardDifficulty {
     AGAIN, HARD, GOOD, EASY
@@ -17,79 +29,68 @@ data class LearningUiState(
     val currentIndex: Int = 0,
     val isFlipped: Boolean = false,
     val isFinished: Boolean = false,
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null,
     val progressMap: Map<Int, FlashcardProgress> = emptyMap() // Lưu tiến trình học: wordId -> FlashcardProgress
 )
 
 class LearningViewModel(
+    private val userId: Int,
+    private val deckId: Int?,
+    private val vocabularyRepository: VocabularyRepository,
+    private val progressRepository: ProgressRepository,
+    private val settingsManager: SettingsManager,
     private val spacedRepetitionStrategy: SpacedRepetitionStrategy = SM2Algorithm()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LearningUiState())
     val uiState: StateFlow<LearningUiState> = _uiState.asStateFlow()
 
+    private val progressMutex = Mutex()
+
     init {
-        loadMockData()
+        loadRealData()
     }
 
-    private fun loadMockData() {
-        val mockWords = listOf(
-            Word(
-                wordId = 1,
-                deckId = 1,
-                word = "Ephemeral",
-                pronunciation = "/ɪˈfem.ər.əl/",
-                meaning = "Phù du, chóng tàn, ngắn ngủi",
-                description = "Kéo dài trong một khoảng thời gian rất ngắn.",
-                example = "Fame in the age of social media is often ephemeral.",
-                collocations = "ephemeral pleasure, ephemeral nature",
-                relatedWords = "transitory, fleeting, temporary"
-            ),
-            Word(
-                wordId = 2,
-                deckId = 1,
-                word = "Meticulous",
-                pronunciation = "/məˈtɪk.jə.ləs/",
-                meaning = "Tỉ mỉ, kỹ càng, quá cẩn thận",
-                description = "Rất cẩn thận và chú ý đến từng chi tiết nhỏ nhất.",
-                example = "Many hours of meticulous preparation have gone into writing the plan.",
-                collocations = "meticulous attention, meticulous planning",
-                relatedWords = "thorough, precise, diligent"
-            ),
-            Word(
-                wordId = 3,
-                deckId = 1,
-                word = "Eloquent",
-                pronunciation = "/ˈel.ə.kwənt/",
-                meaning = "Hùng biện, có tài ăn nói, lưu loát",
-                description = "Có khả năng biểu đạt ý kiến, cảm xúc một cách rõ ràng, mạnh mẽ và đầy thuyết phục.",
-                example = "She made an eloquent appeal for action on climate change.",
-                collocations = "eloquent speaker, eloquent speech",
-                relatedWords = "fluent, expressive, persuasive"
-            ),
-            Word(
-                wordId = 4,
-                deckId = 1,
-                word = "Plausible",
-                pronunciation = "/ˈplɔː.zə.bəl/",
-                meaning = "Hợp lý, đáng tin cậy",
-                description = "Dường như đúng, có khả năng đúng hoặc có thể tin tưởng được.",
-                example = "Her explanation of the accident sounded quite plausible.",
-                collocations = "plausible excuse, plausible explanation",
-                relatedWords = "reasonable, credible, believable"
-            ),
-            Word(
-                wordId = 5,
-                deckId = 1,
-                word = "Resilient",
-                pronunciation = "/rɪˈzɪl.jənt/",
-                meaning = "Kiên cường, bền bỉ, đàn hồi",
-                description = "Có khả năng phục hồi nhanh chóng từ khó khăn, nghịch cảnh hoặc chấn thương.",
-                example = "He is a resilient character and will soon recover from this setback.",
-                collocations = "resilient economy, resilient spirit",
-                relatedWords = "tough, strong, adaptable"
-            )
-        )
-        _uiState.update { it.copy(words = mockWords) }
+    private fun loadRealData() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            try {
+                // 1. Tải giới hạn từ mới từ SettingsManager (DataStore)
+                val limit = settingsManager.newWordsLimitFlow.first()
+
+                // 2. Tải Daily Study Deck gộp từ mới và từ cần ôn tập
+                val wordsList = vocabularyRepository.getDailyStudyDeck(
+                    userId = userId,
+                    deckId = if (deckId != null && deckId != -1) deckId else null,
+                    newWordsLimit = limit,
+                    currentTimestamp = System.currentTimeMillis()
+                )
+
+                // 3. Tải toàn bộ FlashcardProgress của User để tra cứu tiến trình ôn tập
+                val allProgress = progressRepository.getFlashcardProgressByUser(userId)
+                val progressMap = allProgress.associateBy { it.wordId }
+
+                _uiState.update {
+                    it.copy(
+                        words = wordsList,
+                        progressMap = progressMap,
+                        isLoading = false,
+                        isFinished = wordsList.isEmpty(),
+                        currentIndex = 0,
+                        isFlipped = false
+                    )
+                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = e.message ?: "Đã xảy ra lỗi khi tải dữ liệu"
+                    )
+                }
+            }
+        }
     }
 
     fun flipCard() {
@@ -112,7 +113,7 @@ class LearningViewModel(
 
         // 2. Lấy thông tin progress cũ của từ (hoặc tạo mặc định nếu chưa có)
         val currentProgress = currentState.progressMap[currentWord.wordId] ?: FlashcardProgress(
-            userId = 1, // Tạm thời mock userId là 1
+            userId = userId,
             wordId = currentWord.wordId,
             easeFactor = 2.5f,
             interval = 0,
@@ -125,12 +126,44 @@ class LearningViewModel(
         // 4. In log kiểm thử toán học
         println("SM-2 [Word: '${currentWord.word}']: Đánh giá $difficulty (Quality: $quality). EF cũ: ${currentProgress.easeFactor} -> EF mới: ${newProgress.easeFactor}. Interval cũ: ${currentProgress.interval} -> Interval mới: ${newProgress.interval} ngày.")
 
-        // 5. Cập nhật Map tiến trình học tập
+        // 5. Lưu tiến trình mới và thống kê học tập hàng ngày vào SQLite DB thật bất đồng bộ
+        viewModelScope.launch {
+            progressRepository.saveFlashcardProgress(newProgress)
+
+            val isNewWord = currentState.progressMap[currentWord.wordId] == null
+            val isCorrect = difficulty != CardDifficulty.AGAIN
+
+            progressMutex.withLock {
+                val todayDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(System.currentTimeMillis())
+                val todayProgress = progressRepository.getProgressByDate(userId, todayDate)
+
+                val updatedProgress = if (todayProgress == null) {
+                    StudyProgress(
+                        userId = userId,
+                        date = todayDate,
+                        newWordsLearned = if (isNewWord) 1 else 0,
+                        wordsReviewed = if (isNewWord) 0 else 1,
+                        correctAnswers = if (isCorrect) 1 else 0,
+                        totalAnswers = 1
+                    )
+                } else {
+                    todayProgress.copy(
+                        newWordsLearned = todayProgress.newWordsLearned + (if (isNewWord) 1 else 0),
+                        wordsReviewed = todayProgress.wordsReviewed + (if (isNewWord) 0 else 1),
+                        correctAnswers = todayProgress.correctAnswers + (if (isCorrect) 1 else 0),
+                        totalAnswers = todayProgress.totalAnswers + 1
+                    )
+                }
+                progressRepository.recordStudySession(updatedProgress)
+            }
+        }
+
+        // 6. Cập nhật Map tiến trình học tập tạm thời trên UI
         val updatedProgressMap = currentState.progressMap.toMutableMap().apply {
             put(currentWord.wordId, newProgress)
         }
 
-        // 6. Chuyển sang thẻ tiếp theo
+        // 7. Chuyển sang thẻ tiếp theo
         val nextIndex = currentState.currentIndex + 1
 
         if (nextIndex < currentState.words.size) {
@@ -153,13 +186,8 @@ class LearningViewModel(
     }
 
     fun restartSession() {
-        _uiState.update {
-            it.copy(
-                currentIndex = 0,
-                isFlipped = false,
-                isFinished = false
-            )
-        }
+        // Tải lại dữ liệu thật để cập nhật tiến trình ôn tập mới nhất của các thẻ từ
+        loadRealData()
     }
 }
 

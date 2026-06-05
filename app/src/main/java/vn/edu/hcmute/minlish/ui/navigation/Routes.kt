@@ -5,7 +5,11 @@ sealed class Screen(val route: String) {
     object Register : Screen("register")
     object Dashboard : Screen("dashboard")
     object Profile : Screen("profile")
-    object Learning : Screen("learning")
+    object Learning : Screen("learning?deckId={deckId}") {
+        fun createRoute(deckId: Int? = null): String {
+            return if (deckId != null) "learning?deckId=$deckId" else "learning"
+        }
+    }
 
     // Màn hình danh sách bộ từ vựng
     object Vocabulary : Screen("vocabulary")

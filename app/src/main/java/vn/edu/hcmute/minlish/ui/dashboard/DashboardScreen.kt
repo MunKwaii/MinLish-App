@@ -36,6 +36,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import vn.edu.hcmute.minlish.ui.auth.AuthViewModel
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,6 +58,21 @@ fun DashboardScreen(
     val currentUser by authViewModel.currentUser.collectAsState()
     val dashboardState by dashboardViewModel.uiState.collectAsState()
     var showNotificationSheet: Boolean by remember { mutableStateOf(false) }
+
+    val avatarBitmap: ImageBitmap? = remember(currentUser?.avatarPath) {
+        val path: String? = currentUser?.avatarPath
+        if (path != null) {
+            val file: java.io.File = java.io.File(path)
+            if (file.exists() == true) {
+                val bitmap: android.graphics.Bitmap? = android.graphics.BitmapFactory.decodeFile(file.absolutePath)
+                if (bitmap != null) {
+                    val imageBitmap: ImageBitmap = bitmap.asImageBitmap()
+                    return@remember imageBitmap
+                }
+            }
+        }
+        return@remember null
+    }
 
     // Tải dữ liệu dashboard khi có user
     LaunchedEffect(currentUser) {
@@ -137,12 +158,23 @@ fun DashboardScreen(
                         modifier = Modifier.padding(20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "User Profile",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(48.dp)
-                        )
+                        if (avatarBitmap != null) {
+                            Image(
+                                bitmap = avatarBitmap,
+                                contentDescription = "User Profile",
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "User Profile",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(8.dp))
 

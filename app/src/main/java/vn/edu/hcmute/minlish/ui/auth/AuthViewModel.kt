@@ -509,6 +509,45 @@ class AuthViewModel(
         _forgotPasswordOtp.value = null
         _uiState.value = AuthUiState.Idle
     }
+
+    fun updateAvatar(avatarPath: String) {
+        val user: User? = _currentUser.value
+        if (user == null) {
+            _uiState.value = AuthUiState.Error("Không tìm thấy thông tin người dùng!")
+            return
+        }
+
+        _uiState.value = AuthUiState.Loading
+        viewModelScope.launch {
+            try {
+                val updatedUser: User = user.copy(avatarPath = avatarPath)
+                val result: Result<Unit> = userRepository.updateUser(updatedUser)
+                if (result.isSuccess) {
+                    _currentUser.value = updatedUser
+                    _uiState.value = AuthUiState.Success(updatedUser)
+                } else {
+                    val exception: Throwable? = result.exceptionOrNull()
+                    if (exception != null) {
+                        val msg: String? = exception.message
+                        if (msg != null) {
+                            _uiState.value = AuthUiState.Error(msg)
+                        } else {
+                            _uiState.value = AuthUiState.Error("Cập nhật ảnh đại diện thất bại!")
+                        }
+                    } else {
+                        _uiState.value = AuthUiState.Error("Cập nhật ảnh đại diện thất bại!")
+                    }
+                }
+            } catch (e: Exception) {
+                val errMsg: String? = e.localizedMessage
+                if (errMsg != null) {
+                    _uiState.value = AuthUiState.Error(errMsg)
+                } else {
+                    _uiState.value = AuthUiState.Error("Đã xảy ra lỗi hệ thống")
+                }
+            }
+        }
+    }
 }
 
 class AuthViewModelFactory(

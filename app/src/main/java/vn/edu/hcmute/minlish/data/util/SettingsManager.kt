@@ -27,6 +27,7 @@ class SettingsManager(private val context: Context) {
         private val KEY_DUE_WORDS_REMINDER_ENABLED = booleanPreferencesKey("due_words_reminder_enabled")
         private val KEY_EMAIL_NOTIFICATION_ENABLED = booleanPreferencesKey("email_notification_enabled")
         private val KEY_PUSH_NOTIFICATION_ENABLED = booleanPreferencesKey("push_notification_enabled")
+        private val KEY_BIOMETRIC_ENABLED = booleanPreferencesKey("biometric_enabled")
     }
 
     // ── New words limit ───────────────────────────────────────────────────────
@@ -166,6 +167,21 @@ class SettingsManager(private val context: Context) {
     suspend fun savePushNotificationEnabled(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[KEY_PUSH_NOTIFICATION_ENABLED] = enabled
+        }
+    }
+
+    val biometricEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        val enabled: Boolean? = prefs[KEY_BIOMETRIC_ENABLED]
+        if (enabled != null) {
+            enabled
+        } else {
+            false
+        }
+    }
+
+    suspend fun saveBiometricEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_BIOMETRIC_ENABLED] = enabled
         }
     }
 }

@@ -37,6 +37,18 @@ class AuthViewModel(
     private val _generatedOtp = MutableStateFlow<String?>(null)
     val generatedOtp: StateFlow<String?> = _generatedOtp.asStateFlow()
 
+    private val _showForgotPasswordOtp = MutableStateFlow(false)
+    val showForgotPasswordOtp: StateFlow<Boolean> = _showForgotPasswordOtp.asStateFlow()
+
+    private val _forgotPasswordEmail = MutableStateFlow<String?>(null)
+    val forgotPasswordEmail: StateFlow<String?> = _forgotPasswordEmail.asStateFlow()
+
+    private val _forgotPasswordOtp = MutableStateFlow<String?>(null)
+    private var forgotPasswordOtpExpiry = 0L
+
+    private val _showResetPasswordScreen = MutableStateFlow(false)
+    val showResetPasswordScreen: StateFlow<Boolean> = _showResetPasswordScreen.asStateFlow()
+
     private var tempUser: User? = null
     private var otpExpiryTime = 0L
 
@@ -375,6 +387,127 @@ class AuthViewModel(
         if (_uiState.value is AuthUiState.Error) {
             _uiState.value = AuthUiState.Idle
         }
+    }
+
+    fun sendForgotPasswordOtp(email: String) {
+        if (email.isBlank() == true) {
+            _uiState.value = AuthUiState.Error("Vui lòng nhập email!")
+            return
+        }
+
+        _uiState.value = AuthUiState.Loading
+        viewModelScope.launch {
+            try {
+                val user: User? = userRepository.getUserByEmail(email)
+                if (user == null) {
+                    _uiState.value = AuthUiState.Error("Email này chưa được đăng ký tài khoản!")
+                } else {
+                    val otp: String = generateRandomOtp()
+                    val emailResult: Result<Unit> = EmailSender.sendForgotPasswordOtpEmail(email, otp)
+                    if (emailResult.isSuccess == true) {
+                        _forgotPasswordEmail.value = email
+                        _forgotPasswordOtp.value = otp
+                        forgotPasswordOtpExpiry = System.currentTimeMillis() + 120_000
+                        _showForgotPasswordOtp.value = true
+                        _uiState.value = AuthUiState.Idle
+                    } else {
+                        val exception: Throwable? = emailResult.exceptionOrNull()
+                        val msg: String? = exception?.localizedMessage
+                        if (msg != null) {
+                            _uiState.value = AuthUiState.Error("Không gửi được email xác thực: " + msg)
+                        } else {
+                            _uiState.value = AuthUiState.Error("Không gửi được email xác thực!")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                val errMsg: String? = e.localizedMessage
+                if (errMsg != null) {
+                    _uiState.value = AuthUiState.Error(errMsg)
+                } else {
+                    _uiState.value = AuthUiState.Error("Đã xảy ra lỗi hệ thống")
+                }
+            }
+        }
+    }
+
+    fun verifyForgotPasswordOtp(enteredOtp: String) {
+        if (enteredOtp.length != 6) {
+            _uiState.value = AuthUiState.Error("Mã OTP phải có đúng 6 chữ số!")
+            return
+        }
+
+        val currentTime: Long = System.currentTimeMillis()
+        if (currentTime > forgotPasswordOtpExpiry) {
+            _uiState.value = AuthUiState.Error("Mã OTP đã hết hạn! Vui lòng gửi lại mã mới.")
+            return
+        }
+
+        val expectedOtp: String? = _forgotPasswordOtp.value
+        if (enteredOtp != expectedOtp) {
+            _uiState.value = AuthUiState.Error("Mã OTP nhập vào không chính xác!")
+            return
+        }
+
+        _showForgotPasswordOtp.value = false
+        _showResetPasswordScreen.value = true
+        _uiState.value = AuthUiState.Idle
+    }
+
+    fun resetPassword(password: String) {
+        if (password.isBlank() == true) {
+            _uiState.value = AuthUiState.Error("Mật khẩu không được để trống!")
+            return
+        }
+
+        val email: String? = _forgotPasswordEmail.value
+        if (email == null) {
+            _uiState.value = AuthUiState.Error("Không tìm thấy thông tin email khôi phục!")
+            return
+        }
+
+        _uiState.value = AuthUiState.Loading
+        viewModelScope.launch {
+            try {
+                val user: User? = userRepository.getUserByEmail(email)
+                if (user == null) {
+                    _uiState.value = AuthUiState.Error("Không tìm thấy tài khoản người dùng!")
+                } else {
+                    val passwordHash: String = org.mindrot.jbcrypt.BCrypt.hashpw(password, org.mindrot.jbcrypt.BCrypt.gensalt())
+                    val updatedUser: User = user.copy(passwordHash = passwordHash)
+                    val result: Result<Unit> = userRepository.updateUser(updatedUser)
+                    if (result.isSuccess == true) {
+                        _showResetPasswordScreen.value = false
+                        _forgotPasswordEmail.value = null
+                        _forgotPasswordOtp.value = null
+                        _uiState.value = AuthUiState.Success(updatedUser)
+                    } else {
+                        val exception: Throwable? = result.exceptionOrNull()
+                        val msg: String? = exception?.message
+                        if (msg != null) {
+                            _uiState.value = AuthUiState.Error(msg)
+                        } else {
+                            _uiState.value = AuthUiState.Error("Đặt lại mật khẩu thất bại!")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                val errMsg: String? = e.localizedMessage
+                if (errMsg != null) {
+                    _uiState.value = AuthUiState.Error(errMsg)
+                } else {
+                    _uiState.value = AuthUiState.Error("Đã xảy ra lỗi hệ thống")
+                }
+            }
+        }
+    }
+
+    fun cancelForgotPassword() {
+        _showForgotPasswordOtp.value = false
+        _showResetPasswordScreen.value = false
+        _forgotPasswordEmail.value = null
+        _forgotPasswordOtp.value = null
+        _uiState.value = AuthUiState.Idle
     }
 }
 

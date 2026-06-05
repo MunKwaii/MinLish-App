@@ -46,6 +46,16 @@ fun LoginScreen(
     val context = LocalContext.current
     val uiState by authViewModel.uiState.collectAsState()
 
+    var showForgotEmailDialog: Boolean by remember { mutableStateOf(false) }
+    var forgotEmailText: String by remember { mutableStateOf("") }
+    var newPasswordText: String by remember { mutableStateOf("") }
+    var newPasswordVisible: Boolean by remember { mutableStateOf(false) }
+    var enteredForgotOtp: String by remember { mutableStateOf("") }
+
+    val showForgotPasswordOtp: Boolean by authViewModel.showForgotPasswordOtp.collectAsState()
+    val showResetPasswordScreen: Boolean by authViewModel.showResetPasswordScreen.collectAsState()
+    val forgotPasswordEmail: String? by authViewModel.forgotPasswordEmail.collectAsState()
+
     // Cấu hình Google Sign-In
     val gso = remember {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -202,6 +212,28 @@ fun LoginScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(
+                            onClick = {
+                                showForgotEmailDialog = true
+                                authViewModel.clearError()
+                            },
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text(
+                                text = "Quên mật khẩu?",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(20.dp))
 
                     // Thông báo lỗi nếu có
@@ -323,6 +355,249 @@ fun LoginScreen(
                 }
             }
         }
+    }
+
+    // 1. Dialog Nhập Email Khôi Phục
+    if (showForgotEmailDialog == true) {
+        AlertDialog(
+            onDismissRequest = {
+                showForgotEmailDialog = false
+                authViewModel.clearError()
+            },
+            title = {
+                Text(
+                    text = "Khôi phục mật khẩu",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Vui lòng nhập email đăng ký tài khoản của bạn để nhận mã xác minh OTP.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = forgotEmailText,
+                        onValueChange = { textVal ->
+                            forgotEmailText = textVal
+                            authViewModel.clearError()
+                        },
+                        label = { Text("Email khôi phục") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (uiState is AuthUiState.Error) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = (uiState as AuthUiState.Error).message,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        authViewModel.sendForgotPasswordOtp(forgotEmailText.trim())
+                    },
+                    enabled = uiState !is AuthUiState.Loading,
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    if (uiState is AuthUiState.Loading) {
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(text = "Gửi mã OTP")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showForgotEmailDialog = false
+                        authViewModel.clearError()
+                    }
+                ) {
+                    Text(text = "Hủy")
+                }
+            }
+        )
+    }
+
+    // 2. Dialog Nhập OTP Khôi Phục
+    if (showForgotPasswordOtp == true) {
+        LaunchedEffect(Unit) {
+            showForgotEmailDialog = false
+        }
+
+        AlertDialog(
+            onDismissRequest = {
+                authViewModel.cancelForgotPassword()
+            },
+            title = {
+                Text(
+                    text = "Xác nhận mã OTP",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Mã xác minh đã được gửi về email: " + (forgotPasswordEmail ?: ""),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = enteredForgotOtp,
+                        onValueChange = { textVal ->
+                            enteredForgotOtp = textVal
+                            authViewModel.clearError()
+                        },
+                        label = { Text("Mã xác minh (6 số)") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (uiState is AuthUiState.Error) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = (uiState as AuthUiState.Error).message,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        authViewModel.verifyForgotPasswordOtp(enteredForgotOtp.trim())
+                    },
+                    enabled = uiState !is AuthUiState.Loading,
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(text = "Xác nhận")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        authViewModel.cancelForgotPassword()
+                        enteredForgotOtp = ""
+                    }
+                ) {
+                    Text(text = "Hủy")
+                }
+            }
+        )
+    }
+
+    // 3. Dialog Đặt Lại Mật Khẩu Mới
+    if (showResetPasswordScreen == true) {
+        AlertDialog(
+            onDismissRequest = {
+                authViewModel.cancelForgotPassword()
+            },
+            title = {
+                Text(
+                    text = "Đặt lại mật khẩu mới",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Mã xác minh hợp lệ. Hãy thiết lập mật khẩu mới cho tài khoản của bạn.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    val transformation = if (newPasswordVisible) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    }
+                    val passIcon = if (newPasswordVisible) {
+                        Icons.Filled.Visibility
+                    } else {
+                        Icons.Filled.VisibilityOff
+                    }
+
+                    OutlinedTextField(
+                        value = newPasswordText,
+                        onValueChange = { textVal ->
+                            newPasswordText = textVal
+                            authViewModel.clearError()
+                        },
+                        label = { Text("Mật khẩu mới") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = { newPasswordVisible = !newPasswordVisible }) {
+                                Icon(imageVector = passIcon, contentDescription = null)
+                            }
+                        },
+                        visualTransformation = transformation,
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (uiState is AuthUiState.Error) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = (uiState as AuthUiState.Error).message,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        authViewModel.resetPassword(newPasswordText.trim())
+                    },
+                    enabled = uiState !is AuthUiState.Loading,
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    if (uiState is AuthUiState.Loading) {
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(text = "Đặt lại mật khẩu")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        authViewModel.cancelForgotPassword()
+                        newPasswordText = ""
+                    }
+                ) {
+                    Text(text = "Hủy")
+                }
+            }
+        )
     }
 }
 

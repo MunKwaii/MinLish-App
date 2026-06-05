@@ -1,7 +1,11 @@
 package vn.edu.hcmute.minlish
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
+import java.util.concurrent.Executor
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -24,7 +28,7 @@ import vn.edu.hcmute.minlish.ui.theme.MinLishTheme
 import vn.edu.hcmute.minlish.ui.vocabulary.VocabViewModel
 import vn.edu.hcmute.minlish.ui.vocabulary.VocabViewModelFactory
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
     private val requestPermissionLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
@@ -63,10 +67,26 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Tự động khôi phục phiên đăng nhập từ JWT Token nếu có.
-        authViewModel.autoLogin()
-
         val settingsManager = (application as MinLishApplication).settingsManager
+        val sessionManager = (application as MinLishApplication).sessionManager
+
+        // Tự động khôi phục phiên đăng nhập từ JWT Token nếu được phép bảo mật sinh trắc
+        lifecycleScope.launch {
+            val biometricEnabled: Boolean = settingsManager.biometricEnabledFlow.first()
+            val hasToken: Boolean = sessionManager.getToken() != null
+
+            if (biometricEnabled == true && hasToken == true) {
+                val biometricManager: BiometricManager = BiometricManager.from(this@MainActivity)
+                val canAuthenticate: Int = biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                if (canAuthenticate == BiometricManager.BIOMETRIC_SUCCESS) {
+                    showBiometricPrompt()
+                } else {
+                    authViewModel.autoLogin()
+                }
+            } else {
+                authViewModel.autoLogin()
+            }
+        }
 
         // Tự động lên lịch báo thức nhắc học tập hàng ngày nếu được bật
         lifecycleScope.launch {
@@ -101,5 +121,34 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun showBiometricPrompt() {
+        val executor: Executor = ContextCompat.getMainExecutor(this)
+        val callback: BiometricPrompt.AuthenticationCallback = object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                super.onAuthenticationError(errorCode, errString)
+                authViewModel.logout()
+            }
+
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                super.onAuthenticationSucceeded(result)
+                authViewModel.autoLogin()
+            }
+
+            override fun onAuthenticationFailed() {
+                super.onAuthenticationFailed()
+            }
+        }
+
+        val biometricPrompt: BiometricPrompt = BiometricPrompt(this, executor, callback)
+        val promptInfo: BiometricPrompt.PromptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle("Đăng nhập vân tay")
+            .setSubtitle("Xác thực vân tay của bạn để tiếp tục vào MinLish")
+            .setNegativeButtonText("Sử dụng mật khẩu")
+            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+            .build()
+
+        biometricPrompt.authenticate(promptInfo)
     }
 }

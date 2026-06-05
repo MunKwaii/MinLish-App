@@ -162,6 +162,35 @@ fun SettingsScreen(
                             )
                         }
 
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Đăng nhập bằng vân tay",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            val biometricEnabled: Boolean by settingsManager.biometricEnabledFlow.collectAsState(initial = false)
+                            Switch(
+                                checked = biometricEnabled,
+                                onCheckedChange = { checked ->
+                                    val biometricManager: androidx.biometric.BiometricManager = androidx.biometric.BiometricManager.from(context)
+                                    val canAuth: Int = biometricManager.canAuthenticate(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                                    if (canAuth == androidx.biometric.BiometricManager.BIOMETRIC_SUCCESS) {
+                                        coroutineScope.launch {
+                                            settingsManager.saveBiometricEnabled(checked)
+                                        }
+                                    } else {
+                                        Toast.makeText(context, "Thiết bị không hỗ trợ hoặc chưa cài đặt vân tay!", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            )
+                        }
+
                         Spacer(modifier = Modifier.height(20.dp))
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         Spacer(modifier = Modifier.height(20.dp))

@@ -119,6 +119,9 @@ dependencies {
 
     // DATASTORE PREFERENCES
     implementation(libs.datastore.preferences)
+
+    // BIOMETRIC AUTHENTICATION
+    implementation(libs.androidx.biometric)
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {

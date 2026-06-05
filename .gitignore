@@ -15,3 +15,7 @@
 local.properties
 .gradle/
 readthisthit.md
+
+# Android Studio local configs
+/.idea/misc.xml
+/.idea/deploymentTargetSelector.xml

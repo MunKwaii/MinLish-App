@@ -17,6 +17,10 @@ interface VocabularyRepository {
         tags: String
     ): Result<Long>
 
+    suspend fun updateDeck(deck: Deck): Result<Unit>
+
+    suspend fun deleteDeck(deck: Deck): Result<Unit>
+
     suspend fun addWord(
         deckId: Int,
         word: String,
@@ -28,6 +32,10 @@ interface VocabularyRepository {
         relatedWords: String?,
         note: String?
     ): Result<Long>
+
+    suspend fun updateWord(word: Word): Result<Unit>
+
+    suspend fun deleteWord(word: Word): Result<Unit>
 
     suspend fun importWords(deckId: Int, words: List<Word>): Result<Unit>
 

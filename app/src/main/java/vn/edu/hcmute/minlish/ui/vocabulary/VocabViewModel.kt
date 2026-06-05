@@ -3,11 +3,12 @@ package vn.edu.hcmute.minlish.ui.vocabulary
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import vn.edu.hcmute.minlish.data.local.entity.Deck
@@ -25,7 +26,7 @@ class VocabViewModel(
     private var deckJob: Job? = null
     private var wordJob: Job? = null
 
-    // Tải danh sách bộ từ vựng theo user hiện tại
+    // Tải danh sách bộ từ theo user hiện tại
     fun loadDecks(userId: Int) {
         deckJob?.cancel()
 
@@ -149,6 +150,98 @@ class VocabViewModel(
         }
     }
 
+    fun updateDeck(
+        deck: Deck,
+        name: String,
+        description: String,
+        tags: String
+    ) {
+        val trimmedName = name.trim()
+        if (trimmedName.isBlank()) {
+            _uiState.update {
+                it.copy(errorMessage = "Tên bộ từ không được để trống")
+            }
+            return
+        }
+
+        val updatedDeck = deck.copy(
+            name = trimmedName,
+            description = description.trim(),
+            tags = tags.trim()
+        )
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                    successMessage = null
+                )
+            }
+
+            val result = vocabularyRepository.updateDeck(updatedDeck)
+
+            result
+                .onSuccess {
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            isLoading = false,
+                            successMessage = "Đã cập nhật bộ từ vựng thành công",
+                            selectedDeck = if (currentState.selectedDeck?.deckId == updatedDeck.deckId) {
+                                updatedDeck
+                            } else {
+                                currentState.selectedDeck
+                            }
+                        )
+                    }
+                }
+                .onFailure { exception ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = exception.message ?: "Cập nhật bộ từ thất bại"
+                        )
+                    }
+                }
+        }
+    }
+
+    fun deleteDeck(deck: Deck) {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                    successMessage = null
+                )
+            }
+
+            val result = vocabularyRepository.deleteDeck(deck)
+
+            result
+                .onSuccess {
+                    _uiState.update { currentState ->
+                        val isSelectedDeck = currentState.selectedDeck?.deckId == deck.deckId
+
+                        currentState.copy(
+                            isLoading = false,
+                            successMessage = "Đã xóa bộ từ vựng thành công",
+                            selectedDeck = if (isSelectedDeck) null else currentState.selectedDeck,
+                            words = if (isSelectedDeck) emptyList() else currentState.words
+                        )
+                    }
+                }
+                .onFailure { exception ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = exception.message ?: "Xóa bộ từ thất bại"
+                        )
+                    }
+                }
+        }
+    }
+
     // Thêm từ vựng thủ công từ form nhập liệu
     fun addWord(
         deckId: Int,
@@ -210,6 +303,107 @@ class VocabViewModel(
                         it.copy(
                             isLoading = false,
                             errorMessage = exception.message ?: "Thêm từ vựng thất bại"
+                        )
+                    }
+                }
+        }
+    }
+
+    fun updateWord(
+        originalWord: Word,
+        word: String,
+        pronunciation: String,
+        meaning: String,
+        description: String,
+        example: String,
+        collocations: String,
+        relatedWords: String,
+        note: String
+    ) {
+        val trimmedWord = word.trim()
+        if (trimmedWord.isBlank()) {
+            _uiState.update {
+                it.copy(errorMessage = "Từ vựng không được để trống")
+            }
+            return
+        }
+
+        val trimmedMeaning = meaning.trim()
+        if (trimmedMeaning.isBlank()) {
+            _uiState.update {
+                it.copy(errorMessage = "Nghĩa của từ không được để trống")
+            }
+            return
+        }
+
+        val updatedWord = originalWord.copy(
+            word = trimmedWord,
+            pronunciation = pronunciation.trim(),
+            meaning = trimmedMeaning,
+            description = description.toOptionalText(),
+            example = example.toOptionalText(),
+            collocations = collocations.toOptionalText(),
+            relatedWords = relatedWords.toOptionalText(),
+            note = note.toOptionalText()
+        )
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                    successMessage = null
+                )
+            }
+
+            val result = vocabularyRepository.updateWord(updatedWord)
+
+            result
+                .onSuccess {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            successMessage = "Đã cập nhật từ vựng thành công"
+                        )
+                    }
+                }
+                .onFailure { exception ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = exception.message ?: "Cập nhật từ vựng thất bại"
+                        )
+                    }
+                }
+        }
+    }
+
+    fun deleteWord(word: Word) {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                    successMessage = null
+                )
+            }
+
+            val result = vocabularyRepository.deleteWord(word)
+
+            result
+                .onSuccess {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            successMessage = "Đã xóa từ vựng thành công"
+                        )
+                    }
+                }
+                .onFailure { exception ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = exception.message ?: "Xóa từ vựng thất bại"
                         )
                     }
                 }
@@ -370,6 +564,10 @@ class VocabViewModel(
                 lookupError = null
             )
         }
+    }
+
+    private fun String.toOptionalText(): String? {
+        return trim().ifBlank { null }
     }
 }
 

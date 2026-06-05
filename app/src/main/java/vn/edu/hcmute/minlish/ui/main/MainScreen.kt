@@ -17,7 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import vn.edu.hcmute.minlish.ui.auth.AuthViewModel
@@ -47,7 +47,7 @@ fun MainScreen(
     isDarkTheme: Boolean,
     modifier: Modifier = Modifier
 ) {
-    var selectedTab by remember { mutableStateOf(MainTab.Home) }
+    var selectedTab by rememberSaveable { mutableStateOf(MainTab.Home) }
     val currentUser by authViewModel.currentUser.collectAsState()
     val userId = currentUser?.userId ?: 0
 

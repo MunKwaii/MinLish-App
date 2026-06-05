@@ -44,15 +44,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import vn.edu.hcmute.minlish.data.local.entity.Deck
 
-/**
- * Màn hình hiển thị danh sách các bộ từ vựng của người dùng.
- *
- * Nhiệm vụ:
- * - Tải danh sách bộ từ theo userId.
- * - Hiển thị từng bộ từ dưới dạng Card.
- * - Cho phép tạo bộ từ mới thông qua AddDeckDialog.
- * - Gửi sự kiện chọn bộ từ ra ngoài để điều hướng sang màn hình danh sách từ.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeckListScreen(
@@ -66,27 +57,21 @@ fun DeckListScreen(
     var showAddDeckDialog by remember {
         mutableStateOf(false)
     }
+    var deckToEdit by remember {
+        mutableStateOf<Deck?>(null)
+    }
+    var deckToDelete by remember {
+        mutableStateOf<Deck?>(null)
+    }
 
     val snackbarHostState = remember {
         SnackbarHostState()
     }
 
-    /**
-     * Tải danh sách bộ từ khi màn hình được mở.
-     *
-     * LaunchedEffect(userId) đảm bảo chỉ tải lại khi userId thay đổi,
-     * tránh gọi loadDecks liên tục khi Compose recomposition.
-     */
     LaunchedEffect(userId) {
         viewModel.loadDecks(userId)
     }
 
-    /**
-     * Hiển thị thông báo thành công hoặc lỗi bằng Snackbar.
-     *
-     * Sau khi hiển thị xong cần gọi clearMessage()
-     * để tránh thông báo bị lặp lại khi UI recomposition.
-     */
     LaunchedEffect(uiState.successMessage, uiState.errorMessage) {
         val message = uiState.successMessage ?: uiState.errorMessage
 
@@ -155,6 +140,12 @@ fun DeckListScreen(
                         onDeckClick = { deck ->
                             viewModel.selectDeck(deck)
                             onDeckClick(deck)
+                        },
+                        onEditDeck = { deck ->
+                            deckToEdit = deck
+                        },
+                        onDeleteDeck = { deck ->
+                            deckToDelete = deck
                         }
                     )
                 }
@@ -175,20 +166,52 @@ fun DeckListScreen(
                     description = description,
                     tags = tags
                 )
-
                 showAddDeckDialog = false
+            }
+        )
+    }
+
+    deckToEdit?.let { deck ->
+        EditDeckDialog(
+            deck = deck,
+            isLoading = uiState.isLoading,
+            onDismiss = {
+                deckToEdit = null
+            },
+            onConfirm = { name, description, tags ->
+                viewModel.updateDeck(
+                    deck = deck,
+                    name = name,
+                    description = description,
+                    tags = tags
+                )
+                deckToEdit = null
+            }
+        )
+    }
+
+    deckToDelete?.let { deck ->
+        ConfirmDeleteDialog(
+            title = "Xóa bộ từ",
+            message = "Bạn có chắc muốn xóa bộ từ \"${deck.name}\" không?",
+            isLoading = uiState.isLoading,
+            onDismiss = {
+                deckToDelete = null
+            },
+            onConfirm = {
+                viewModel.deleteDeck(deck)
+                deckToDelete = null
             }
         )
     }
 }
 
-/**
- * Nội dung danh sách bộ từ vựng.
- */
 @Composable
 private fun DeckListContent(
     decks: List<Deck>,
-    onDeckClick: (Deck) -> Unit
+    onDeckClick: (Deck) -> Unit,
+    onEditDeck: (Deck) -> Unit,
+    onDeleteDeck: (Deck) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -205,26 +228,27 @@ private fun DeckListContent(
                 deck = deck,
                 onClick = {
                     onDeckClick(deck)
+                },
+                onEditClick = {
+                    onEditDeck(deck)
+                },
+                onDeleteClick = {
+                    onDeleteDeck(deck)
                 }
             )
         }
     }
 }
 
-/**
- * Card hiển thị thông tin một bộ từ vựng.
- */
 @Composable
 private fun DeckItem(
     deck: Deck,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                onClick()
-            },
+        modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 2.dp
         )
@@ -234,44 +258,73 @@ private fun DeckItem(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            Text(
-                text = deck.name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            if (deck.description.isNotBlank()) {
-                Spacer(modifier = Modifier.height(6.dp))
-
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        onClick()
+                    }
+            ) {
                 Text(
-                    text = deck.description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            if (deck.tags.isNotBlank()) {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Tags: ${deck.tags}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    text = deck.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+
+                if (deck.description.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = deck.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                if (deck.tags.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Tags: ${deck.tags}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(
+                    onClick = onEditClick
+                ) {
+                    Text(text = "Sửa")
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                TextButton(
+                    onClick = onDeleteClick
+                ) {
+                    Text(
+                        text = "Xóa",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }
 }
 
-/**
- * Nội dung hiển thị khi chưa có bộ từ nào.
- */
 @Composable
 private fun EmptyDeckContent(
     onCreateDeckClick: () -> Unit
@@ -307,9 +360,6 @@ private fun EmptyDeckContent(
     }
 }
 
-/**
- * Nội dung hiển thị khi đang tải dữ liệu.
- */
 @Composable
 private fun LoadingContent() {
     Box(
@@ -320,14 +370,6 @@ private fun LoadingContent() {
     }
 }
 
-/**
- * Dialog nhập thông tin để tạo bộ từ vựng mới.
- *
- * Các trường:
- * - Tên bộ từ: bắt buộc.
- * - Mô tả: không bắt buộc.
- * - Tags: không bắt buộc, có thể nhập dạng IELTS, Business, Travel.
- */
 @Composable
 private fun AddDeckDialog(
     isLoading: Boolean,
@@ -341,15 +383,12 @@ private fun AddDeckDialog(
     var name by remember {
         mutableStateOf("")
     }
-
     var description by remember {
         mutableStateOf("")
     }
-
     var tags by remember {
         mutableStateOf("")
     }
-
     var nameError by remember {
         mutableStateOf<String?>(null)
     }

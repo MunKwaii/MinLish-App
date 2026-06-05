@@ -50,6 +50,39 @@ class VocabularyRepositoryImpl(
         }
     }
 
+    override suspend fun updateDeck(deck: Deck): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val trimmedName = deck.name.trim()
+                if (trimmedName.isBlank()) {
+                    return@withContext Result.failure(Exception("Tên bộ từ không được để trống"))
+                }
+
+                val updatedDeck = deck.copy(
+                    name = trimmedName,
+                    description = deck.description.trim(),
+                    tags = deck.tags.trim()
+                )
+
+                deckDao.updateDeck(updatedDeck)
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun deleteDeck(deck: Deck): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                deckDao.deleteDeck(deck)
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
     override suspend fun addWord(
         deckId: Int,
         word: String,
@@ -85,6 +118,50 @@ class VocabularyRepositoryImpl(
 
                 val id = wordDao.insertWord(wordEntity)
                 Result.success(id)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun updateWord(word: Word): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val trimmedWord = word.word.trim()
+                val trimmedMeaning = word.meaning.trim()
+
+                if (trimmedWord.isBlank()) {
+                    return@withContext Result.failure(Exception("Từ vựng không được để trống"))
+                }
+
+                if (trimmedMeaning.isBlank()) {
+                    return@withContext Result.failure(Exception("Nghĩa của từ không được để trống"))
+                }
+
+                val updatedWord = word.copy(
+                    word = trimmedWord,
+                    pronunciation = word.pronunciation.trim(),
+                    meaning = trimmedMeaning,
+                    description = word.description.trimOrNull(),
+                    example = word.example.trimOrNull(),
+                    collocations = word.collocations.trimOrNull(),
+                    relatedWords = word.relatedWords.trimOrNull(),
+                    note = word.note.trimOrNull()
+                )
+
+                wordDao.updateWord(updatedWord)
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    override suspend fun deleteWord(word: Word): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                wordDao.deleteWord(word)
+                Result.success(Unit)
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -134,5 +211,9 @@ class VocabularyRepositoryImpl(
 
             dueWords + newWords
         }
+    }
+
+    private fun String?.trimOrNull(): String? {
+        return this?.trim()?.ifBlank { null }
     }
 }

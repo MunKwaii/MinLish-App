@@ -6,13 +6,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -20,6 +24,8 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -29,10 +35,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -70,6 +72,8 @@ fun WordListScreen(
 
     var importMenuExpanded by remember { mutableStateOf(false) }
     var exportMenuExpanded by remember { mutableStateOf(false) }
+    var wordToEdit by remember { mutableStateOf<Word?>(null) }
+    var wordToDelete by remember { mutableStateOf<Word?>(null) }
 
     val importCsvLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -216,9 +220,14 @@ fun WordListScreen(
                         Icon(
                             imageVector = Icons.Default.Lightbulb,
                             contentDescription = "Học Flashcard",
-                            tint = if (uiState.words.isNotEmpty()) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.4f)
+                            tint = if (uiState.words.isNotEmpty()) {
+                                MaterialTheme.colorScheme.onPrimary
+                            } else {
+                                MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.4f)
+                            }
                         )
                     }
+
                     Box {
                         TextButton(
                             onClick = {
@@ -353,17 +362,64 @@ fun WordListScreen(
 
                 else -> {
                     WordListContent(
-                        words = uiState.words
+                        words = uiState.words,
+                        onEditWord = { word ->
+                            wordToEdit = word
+                        },
+                        onDeleteWord = { word ->
+                            wordToDelete = word
+                        }
                     )
                 }
             }
         }
     }
+
+    wordToEdit?.let { word ->
+        EditWordDialog(
+            word = word,
+            isLoading = uiState.isLoading,
+            onDismiss = {
+                wordToEdit = null
+            },
+            onConfirm = { wordText, pronunciation, meaning, description, example, collocations, relatedWords, note ->
+                viewModel.updateWord(
+                    originalWord = word,
+                    word = wordText,
+                    pronunciation = pronunciation,
+                    meaning = meaning,
+                    description = description,
+                    example = example,
+                    collocations = collocations,
+                    relatedWords = relatedWords,
+                    note = note
+                )
+                wordToEdit = null
+            }
+        )
+    }
+
+    wordToDelete?.let { word ->
+        ConfirmDeleteDialog(
+            title = "Xóa từ vựng",
+            message = "Bạn có chắc muốn xóa từ \"${word.word}\" không?",
+            isLoading = uiState.isLoading,
+            onDismiss = {
+                wordToDelete = null
+            },
+            onConfirm = {
+                viewModel.deleteWord(word)
+                wordToDelete = null
+            }
+        )
+    }
 }
 
 @Composable
 private fun WordListContent(
-    words: List<Word>
+    words: List<Word>,
+    onEditWord: (Word) -> Unit,
+    onDeleteWord: (Word) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -374,14 +430,24 @@ private fun WordListContent(
             items = words,
             key = { word -> word.wordId }
         ) { word ->
-            WordItem(word = word)
+            WordItem(
+                word = word,
+                onEditClick = {
+                    onEditWord(word)
+                },
+                onDeleteClick = {
+                    onDeleteWord(word)
+                }
+            )
         }
     }
 }
 
 @Composable
 private fun WordItem(
-    word: Word
+    word: Word,
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -480,6 +546,30 @@ private fun WordItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(
+                    onClick = onEditClick
+                ) {
+                    Text(text = "Sửa")
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                TextButton(
+                    onClick = onDeleteClick
+                ) {
+                    Text(
+                        text = "Xóa",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }

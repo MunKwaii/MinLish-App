@@ -477,6 +477,9 @@ class AuthViewModel(
                     val updatedUser: User = user.copy(passwordHash = passwordHash)
                     val result: Result<Unit> = userRepository.updateUser(updatedUser)
                     if (result.isSuccess == true) {
+                        val token: String = JwtHelper.generateToken(updatedUser.email, updatedUser.userId)
+                        sessionManager.saveToken(token)
+                        _currentUser.value = updatedUser
                         _showResetPasswordScreen.value = false
                         _forgotPasswordEmail.value = null
                         _forgotPasswordOtp.value = null

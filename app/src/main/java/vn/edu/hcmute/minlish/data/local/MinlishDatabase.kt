@@ -22,7 +22,7 @@ import vn.edu.hcmute.minlish.data.local.entity.Word
         FlashcardProgress::class,
         StudyProgress::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class MinlishDatabase : RoomDatabase() {

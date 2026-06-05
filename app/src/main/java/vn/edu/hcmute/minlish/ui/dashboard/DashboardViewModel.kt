@@ -6,9 +6,12 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CancellationException
 import vn.edu.hcmute.minlish.data.local.entity.FlashcardProgress
+import vn.edu.hcmute.minlish.data.local.entity.StudyProgress
+import vn.edu.hcmute.minlish.data.local.entity.Word
 import vn.edu.hcmute.minlish.data.repository.ProgressRepository
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -78,7 +81,9 @@ data class DashboardUiState(
     val estimatedLevel: String = "Beginner",
     val cardMaturity: CardMaturityData = CardMaturityData(),
     val dailyActivity: List<DailyActivityData> = emptyList(),
-    val retentionData: List<RetentionData> = emptyList()
+    val retentionData: List<RetentionData> = emptyList(),
+    val hasStudiedToday: Boolean = false,
+    val dueWordsCount: Int = 0
 )
 
 /**
@@ -92,7 +97,8 @@ data class DashboardUiState(
  * - Đánh giá trình độ (Beginner / Intermediate / Advanced)
  */
 class DashboardViewModel(
-    private val progressRepository: ProgressRepository
+    private val progressRepository: ProgressRepository,
+    private val wordDao: vn.edu.hcmute.minlish.data.local.dao.WordDao
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -177,6 +183,24 @@ class DashboardViewModel(
                 // 8. Đánh giá trình độ theo Card Maturity (Anki-style)
                 val level = estimateLevel(maturity, accuracy, streak)
 
+                // Fetch study progress and due review count
+                val todayDateStr: String = dateFormat.format(Calendar.getInstance().time)
+                val todayProgress: StudyProgress? = progressRepository.getProgressByDate(userId, todayDateStr)
+                val hasStudied: Boolean
+                if (todayProgress == null) {
+                    hasStudied = false
+                } else {
+                    if (todayProgress.newWordsLearned > 0 || todayProgress.wordsReviewed > 0) {
+                        hasStudied = true
+                    } else {
+                        hasStudied = false
+                    }
+                }
+
+                val currentTime: Long = System.currentTimeMillis()
+                val dueWords: List<Word> = wordDao.getAllWordsDueForReviewByUser(userId, currentTime).first()
+                val dueCount: Int = dueWords.size
+
                 _uiState.value = DashboardUiState(
                     isLoading = false,
                     totalWordsLearned = totalWords,
@@ -185,7 +209,9 @@ class DashboardViewModel(
                     estimatedLevel = level,
                     cardMaturity = maturity,
                     dailyActivity = filledDailyActivity,
-                    retentionData = filledRetention
+                    retentionData = filledRetention,
+                    hasStudiedToday = hasStudied,
+                    dueWordsCount = dueCount
                 )
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
@@ -383,12 +409,13 @@ class DashboardViewModel(
  * Factory để tạo DashboardViewModel với dependency ProgressRepository.
  */
 class DashboardViewModelFactory(
-    private val progressRepository: ProgressRepository
+    private val progressRepository: ProgressRepository,
+    private val wordDao: vn.edu.hcmute.minlish.data.local.dao.WordDao
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(DashboardViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return DashboardViewModel(progressRepository) as T
+            return DashboardViewModel(progressRepository, wordDao) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

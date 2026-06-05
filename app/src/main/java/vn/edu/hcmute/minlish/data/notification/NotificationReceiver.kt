@@ -3,6 +3,7 @@ package vn.edu.hcmute.minlish.data.notification
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.widget.Toast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -28,11 +29,17 @@ class NotificationReceiver : BroadcastReceiver() {
                 val sessionToken: String? = app.sessionManager.getToken()
                 
                 if (sessionToken == null) {
+                    launch(Dispatchers.Main) {
+                        Toast.makeText(context, "Báo thức MinLish: Không tìm thấy phiên đăng nhập!", Toast.LENGTH_LONG).show()
+                    }
                     return@launch
                 }
 
                 val payload: JSONObject? = JwtHelper.validateAndParseToken(sessionToken)
                 if (payload == null) {
+                    launch(Dispatchers.Main) {
+                        Toast.makeText(context, "Báo thức MinLish: Hết hạn phiên đăng nhập!", Toast.LENGTH_LONG).show()
+                    }
                     return@launch
                 }
 
@@ -48,14 +55,45 @@ class NotificationReceiver : BroadcastReceiver() {
                 val pushEnabled: Boolean = app.settingsManager.pushNotificationEnabledFlow.first()
 
                 val currentTime: Long = System.currentTimeMillis()
+                val isTestAlarm: Boolean = (intent.action == "vn.edu.hcmute.minlish.TEST_ALARM")
+
+                val dateFormat: SimpleDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                val todayDateStr: String = dateFormat.format(Date(currentTime))
+                val progress: StudyProgress? = app.progressRepository.getProgressByDate(userId, todayDateStr)
+
+                val dueWordsList: List<Word> = app.database.wordDao().getAllWordsDueForReviewByUser(userId, currentTime).first()
+                var dueCount: Int = dueWordsList.size
+                if (isTestAlarm == true) {
+                    dueCount = 3
+                }
+
+                val hasStudied: Boolean
+                if (progress == null) {
+                    hasStudied = false
+                } else {
+                    if (progress.newWordsLearned > 0 || progress.wordsReviewed > 0) {
+                        hasStudied = true
+                    } else {
+                        hasStudied = false
+                    }
+                }
+
+                launch(Dispatchers.Main) {
+                    val statusText: String
+                    if (hasStudied == true) {
+                        statusText = "Rồi"
+                    } else {
+                        statusText = "Chưa"
+                    }
+                    val toastMessage: String = "Báo thức MinLish đã kích hoạt!\n- Đã học hôm nay: " + statusText + "\n- Số từ đến hạn ôn: " + dueCount
+                    Toast.makeText(context, toastMessage, Toast.LENGTH_LONG).show()
+                }
 
                 if (dailyEnabled) {
-                    val dateFormat: SimpleDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                    val todayDateStr: String = dateFormat.format(Date(currentTime))
-                    val progress: StudyProgress? = app.progressRepository.getProgressByDate(userId, todayDateStr)
-
                     var needsReminder: Boolean = false
-                    if (progress == null) {
+                    if (isTestAlarm == true) {
+                        needsReminder = true
+                    } else if (progress == null) {
                         needsReminder = true
                     } else {
                         if (progress.newWordsLearned == 0 && progress.wordsReviewed == 0) {
@@ -68,7 +106,7 @@ class NotificationReceiver : BroadcastReceiver() {
                             NotificationHelper.showDailyReminder(context)
                         }
                         if (emailAlertEnabled) {
-                            val subject: String = "MinLish - Đã đến giờ học tiếng Anh rồi!"
+                            val subject: String = "MinLish - Đã đến giờ học tiếng Anh rồi! (Báo thức test)"
                             val emailBody: String = "<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; background-color: #f9f9f9;\">" +
                                     "<h2 style=\"color: #1976d2; text-align: center;\">MinLish - Học Tập Mỗi Ngày</h2>" +
                                     "<hr style=\"border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;\">" +
@@ -87,13 +125,16 @@ class NotificationReceiver : BroadcastReceiver() {
 
                 if (dueEnabled) {
                     val dueWordsList: List<Word> = app.database.wordDao().getAllWordsDueForReviewByUser(userId, currentTime).first()
-                    val dueCount: Int = dueWordsList.size
+                    var dueCount: Int = dueWordsList.size
+                    if (isTestAlarm == true) {
+                        dueCount = 3
+                    }
                     if (dueCount > 0) {
                         if (pushEnabled) {
                             NotificationHelper.showDueWordsReminder(context, dueCount)
                         }
                         if (emailAlertEnabled) {
-                            val subject: String = "MinLish - Có " + dueCount + " từ vựng đến hạn ôn tập!"
+                            val subject: String = "MinLish - Có " + dueCount + " từ vựng đến hạn ôn tập! (Báo thức test)"
                             val emailBody: String = "<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; background-color: #f9f9f9;\">" +
                                     "<h2 style=\"color: #e53935; text-align: center;\">MinLish - Đến Hạn Ôn Tập</h2>" +
                                     "<hr style=\"border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;\">" +
@@ -107,6 +148,13 @@ class NotificationReceiver : BroadcastReceiver() {
                                     "</div>"
                             EmailSender.sendReminderEmail(email, subject, emailBody)
                         }
+                    }
+                }
+
+                if (isTestAlarm == false) {
+                    if (dailyEnabled == true) {
+                        val reminderTime: String = app.settingsManager.dailyReminderTimeFlow.first()
+                        AlarmScheduler.scheduleDailyAlarm(context, reminderTime)
                     }
                 }
 

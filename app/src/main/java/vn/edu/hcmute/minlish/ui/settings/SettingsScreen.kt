@@ -34,6 +34,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -48,6 +49,11 @@ import androidx.compose.ui.Alignment
 import vn.edu.hcmute.minlish.data.notification.NotificationHelper
 import vn.edu.hcmute.minlish.data.notification.AlarmScheduler
 import vn.edu.hcmute.minlish.data.util.EmailSender
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
@@ -77,6 +83,7 @@ fun SettingsScreen(
 
     var newWordsLimit by remember { mutableStateOf(10) }
     var limitInputText by remember { mutableStateOf("10") }
+    var showTimePickerDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(currentLimit) {
         newWordsLimit = currentLimit
@@ -268,7 +275,7 @@ fun SettingsScreen(
                             )
                         }
 
-                        // Nếu Nhắc học mỗi ngày được bật, hiển thị chọn giờ
+                        // Nếu Nhắc học mỗi ngày được bật, hiển thị chọn giờ bằng bánh xe
                         if (dailyEnabled == true) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(
@@ -277,42 +284,45 @@ fun SettingsScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    text = "Giờ nhắc học tập:",
+                                    text = "Giờ nhắc học tập (Bấm để chọn):",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                                
-                                var dropdownExpanded by remember { mutableStateOf(false) }
-                                val timesList: List<String> = listOf("08:00", "12:00", "15:00", "18:00", "20:00", "22:00")
-                                
-                                Box {
-                                    OutlinedButton(
-                                        onClick = { dropdownExpanded = true },
-                                        shape = RoundedCornerShape(8.dp)
-                                    ) {
-                                        Text(text = dailyTime)
-                                    }
-                                    
-                                    DropdownMenu(
-                                        expanded = dropdownExpanded,
-                                        onDismissRequest = { dropdownExpanded = false }
-                                    ) {
-                                        for (timeOption in timesList) {
-                                            DropdownMenuItem(
-                                                text = { Text(text = timeOption) },
-                                                onClick = {
-                                                    dropdownExpanded = false
-                                                    coroutineScope.launch {
-                                                        settingsManager.saveDailyReminderTime(timeOption)
-                                                        AlarmScheduler.scheduleDailyAlarm(context, timeOption)
-                                                        Toast.makeText(context, "Đã cập nhật giờ nhắc học thành " + timeOption, Toast.LENGTH_SHORT).show()
-                                                    }
-                                                }
-                                            )
-                                        }
-                                    }
+                                OutlinedButton(
+                                    onClick = { showTimePickerDialog = true },
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(text = dailyTime)
                                 }
                             }
+                        }
+
+                        if (showTimePickerDialog == true) {
+                            val timeParts = dailyTime.split(":")
+                            var initHour = 20
+                            var initMinute = 0
+                            if (timeParts.size == 2) {
+                                initHour = timeParts[0].toIntOrNull() ?: 20
+                                initMinute = timeParts[1].toIntOrNull() ?: 0
+                            }
+                            WheelTimePickerDialog(
+                                initialHour = initHour,
+                                initialMinute = initMinute,
+                                onDismiss = {
+                                    showTimePickerDialog = false
+                                },
+                                onConfirm = { hour, minute ->
+                                    showTimePickerDialog = false
+                                    val newHourStr = if (hour < 10) "0$hour" else "$hour"
+                                    val newMinStr = if (minute < 10) "0$minute" else "$minute"
+                                    val newTimeStr = "$newHourStr:$newMinStr"
+                                    coroutineScope.launch {
+                                        settingsManager.saveDailyReminderTime(newTimeStr)
+                                        AlarmScheduler.scheduleDailyAlarm(context, newTimeStr)
+                                        Toast.makeText(context, "Đã cập nhật giờ nhắc học thành " + newTimeStr, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
@@ -384,51 +394,114 @@ fun SettingsScreen(
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        Spacer(modifier = Modifier.height(20.dp))
 
-                        // Nút Gửi thử thông báo
+                        // Section 3.5: TEST LAB
+                        Text(
+                            text = "Test Lab (Khu vực thử nghiệm)",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Khu vực kiểm tra nhanh các loại thông báo ngắt quãng và hẹn giờ mà không cần chờ đợi.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+
                         val currentUser by authViewModel.currentUser.collectAsState()
+
+                        // Nút Test 1: Nhắc học mỗi ngày
                         Button(
                             onClick = {
                                 if (pushEnabled == true) {
                                     NotificationHelper.showDailyReminder(context)
-                                    NotificationHelper.showDueWordsReminder(context, 3)
                                 }
-
-                                val userEmail: String? = currentUser?.email
-                                if (userEmail != null && userEmail.isNotEmpty()) {
-                                    if (emailEnabled == true) {
-                                        coroutineScope.launch {
-                                            val testSubject: String = "MinLish - Kiểm tra hệ thống thông báo"
-                                            val testBody: String = "<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; background-color: #f9f9f9;\">" +
-                                                    "<h2 style=\"color: #4caf50; text-align: center;\">MinLish - Test Thông Báo</h2>" +
-                                                    "<hr style=\"border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;\">" +
-                                                    "<p style=\"font-size: 16px; color: #333;\">Xin chào <strong>" + (currentUser?.name ?: "") + "</strong>,</p>" +
-                                                    "<p style=\"font-size: 16px; color: #333;\">Đây là email gửi thử nghiệm để xác nhận hệ thống thông báo qua email của ứng dụng MinLish hoạt động hoàn toàn ổn định!</p>" +
-                                                    "<hr style=\"border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;\">" +
-                                                    "<p style=\"font-size: 12px; color: #777; text-align: center;\">Cảm ơn bạn đã sử dụng MinLish.</p>" +
-                                                    "</div>"
-                                            val emailResult: Result<Unit> = EmailSender.sendReminderEmail(userEmail, testSubject, testBody)
-                                            if (emailResult.isSuccess) {
-                                                Toast.makeText(context, "Đã gửi thử thông báo Push và Email thành công!", Toast.LENGTH_LONG).show()
-                                            } else {
-                                                Toast.makeText(context, "Đã gửi thử thông báo Push. Gửi Email thất bại!", Toast.LENGTH_LONG).show()
-                                            }
+                                val userEmail = currentUser?.email
+                                if (userEmail != null && userEmail.isNotEmpty() && emailEnabled == true) {
+                                    coroutineScope.launch {
+                                        val testSubject = "MinLish - Đã đến giờ học tiếng Anh rồi! (Test nhanh)"
+                                        val testBody = "<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; background-color: #f9f9f9;\">" +
+                                                "<h2 style=\"color: #1976d2; text-align: center;\">MinLish - Học Tập Mỗi Ngày (Test)</h2>" +
+                                                "<hr style=\"border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;\">" +
+                                                "<p style=\"font-size: 16px; color: #333;\">Xin chào,</p>" +
+                                                "<p style=\"font-size: 16px; color: #333;\">Hôm nay bạn chưa học từ vựng nào trên MinLish. Hãy dành 5 phút vào học để duy trì streak học tập và không bỏ lỡ thói quen học tập hàng ngày nhé!</p>" +
+                                                "<hr style=\"border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;\">" +
+                                                "<p style=\"font-size: 12px; color: #777; text-align: center;\">Cảm ơn bạn đã sử dụng MinLish.</p>" +
+                                                "</div>"
+                                        val result = EmailSender.sendReminderEmail(userEmail, testSubject, testBody)
+                                        if (result.isSuccess) {
+                                            Toast.makeText(context, "Đã gửi thông báo test học mỗi ngày qua email!", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, "Lỗi gửi email!", Toast.LENGTH_SHORT).show()
                                         }
-                                    } else {
-                                        Toast.makeText(context, "Đã gửi thử thông báo Push! (Tính năng thông báo qua Email chưa được bật)", Toast.LENGTH_LONG).show()
                                     }
                                 } else {
-                                    Toast.makeText(context, "Đã gửi thử thông báo Push! (Không tìm thấy email đăng nhập để gửi test mail)", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, "Đã đẩy thông báo Push Nhắc học!", Toast.LENGTH_SHORT).show()
                                 }
                             },
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.secondary
-                            )
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
                         ) {
-                            Text(text = "Gửi thử thông báo thử nghiệm")
+                            Text(text = "Test: Nhắc học mỗi ngày")
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Nút Test 2: Nhắc ôn tập từ vựng
+                        Button(
+                            onClick = {
+                                if (pushEnabled == true) {
+                                    NotificationHelper.showDueWordsReminder(context, 5)
+                                }
+                                val userEmail = currentUser?.email
+                                if (userEmail != null && userEmail.isNotEmpty() && emailEnabled == true) {
+                                    coroutineScope.launch {
+                                        val testSubject = "MinLish - Có 5 từ vựng đến hạn ôn tập! (Test nhanh)"
+                                        val testBody = "<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; background-color: #f9f9f9;\">" +
+                                                "<h2 style=\"color: #e53935; text-align: center;\">MinLish - Đến Hạn Ôn Tập (Test)</h2>" +
+                                                "<hr style=\"border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;\">" +
+                                                "<p style=\"font-size: 16px; color: #333;\">Xin chào,</p>" +
+                                                "<p style=\"font-size: 16px; color: #333;\">Bạn có <strong>5</strong> từ vựng đã đến hạn ôn tập theo thuật toán lặp lại ngắt quãng (Spaced Repetition).</p>" +
+                                                "<hr style=\"border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;\">" +
+                                                "<p style=\"font-size: 12px; color: #777; text-align: center;\">Cảm ơn bạn đã sử dụng MinLish.</p>" +
+                                                "</div>"
+                                        val result = EmailSender.sendReminderEmail(userEmail, testSubject, testBody)
+                                        if (result.isSuccess) {
+                                            Toast.makeText(context, "Đã gửi thông báo test từ đến hạn qua email!", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, "Lỗi gửi email!", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                } else {
+                                    Toast.makeText(context, "Đã đẩy thông báo Push Ôn tập!", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                        ) {
+                            Text(text = "Test: Nhắc ôn tập từ vựng")
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Nút Test 3: Đặt báo thức sau 10 giây
+                        Button(
+                            onClick = {
+                                AlarmScheduler.scheduleTestAlarmInTenSeconds(context)
+                                Toast.makeText(context, "Báo thức đã hẹn sau 10 giây. Hãy đóng ứng dụng và khóa màn hình để kiểm tra!", Toast.LENGTH_LONG).show()
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+                        ) {
+                            Text(text = "Đặt báo thức sau 10 giây")
                         }
 
                         Spacer(modifier = Modifier.height(20.dp))
@@ -466,6 +539,166 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.error
                             )
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun WheelPicker(
+    items: List<String>,
+    initialIndex: Int,
+    onItemSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val lazyListState = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
+    val selectedIndex = remember { derivedStateOf { lazyListState.firstVisibleItemIndex } }
+
+    LaunchedEffect(lazyListState.isScrollInProgress) {
+        if (lazyListState.isScrollInProgress == false) {
+            val index = lazyListState.firstVisibleItemIndex
+            lazyListState.animateScrollToItem(index)
+            onItemSelected(index)
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .height(150.dp)
+            .fillMaxWidth(),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                    shape = RoundedCornerShape(8.dp)
+                )
+        )
+
+        LazyColumn(
+            state = lazyListState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(vertical = 55.dp)
+        ) {
+            items(items.size) { index ->
+                val isSelected = (index == selectedIndex.value)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(40.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = items[index],
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun WheelTimePickerDialog(
+    initialHour: Int,
+    initialMinute: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Int, Int) -> Unit
+) {
+    val hoursList = ArrayList<String>()
+    for (i in 0..23) {
+        val str = if (i < 10) "0$i" else "$i"
+        hoursList.add(str)
+    }
+
+    val minutesList = ArrayList<String>()
+    for (i in 0..59) {
+        val str = if (i < 10) "0$i" else "$i"
+        minutesList.add(str)
+    }
+
+    var selectedHourIndex by remember { mutableStateOf(initialHour.coerceIn(0, 23)) }
+    var selectedMinuteIndex by remember { mutableStateOf(initialMinute.coerceIn(0, 59)) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Chọn giờ nhắc nhở học tập",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    WheelPicker(
+                        items = hoursList,
+                        initialIndex = selectedHourIndex,
+                        onItemSelected = { index ->
+                            selectedHourIndex = index
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                    
+                    Text(
+                        text = ":",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+
+                    WheelPicker(
+                        items = minutesList,
+                        initialIndex = selectedMinuteIndex,
+                        onItemSelected = { index ->
+                            selectedMinuteIndex = index
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text(text = "Hủy")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            onConfirm(selectedHourIndex, selectedMinuteIndex)
+                        }
+                    ) {
+                        Text(text = "Đồng ý")
                     }
                 }
             }

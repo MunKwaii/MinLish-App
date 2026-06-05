@@ -43,8 +43,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private val dashboardViewModel: DashboardViewModel by viewModels {
-        val app = application as MinLishApplication
-        DashboardViewModelFactory(app.progressRepository)
+        val app: MinLishApplication = application as MinLishApplication
+        DashboardViewModelFactory(app.progressRepository, app.database.wordDao())
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

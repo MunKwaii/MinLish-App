@@ -25,14 +25,14 @@ object NotificationHelper {
             val dailyChannel: NotificationChannel = NotificationChannel(
                 CHANNEL_DAILY_ID,
                 CHANNEL_DAILY_NAME,
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_HIGH
             )
             dailyChannel.description = CHANNEL_DAILY_DESC
 
             val dueChannel: NotificationChannel = NotificationChannel(
                 CHANNEL_DUE_ID,
                 CHANNEL_DUE_NAME,
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_HIGH
             )
             dueChannel.description = CHANNEL_DUE_DESC
 
@@ -66,7 +66,7 @@ object NotificationHelper {
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("Đã đến giờ học tiếng Anh rồi!")
             .setContentText("Hãy vào MinLish học từ mới để duy trì streak học tập nhé!")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
 
@@ -100,7 +100,7 @@ object NotificationHelper {
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("Đến hạn ôn tập từ vựng!")
             .setContentText("Bạn có " + dueCount + " từ vựng cần ôn tập ngay hôm nay.")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
 

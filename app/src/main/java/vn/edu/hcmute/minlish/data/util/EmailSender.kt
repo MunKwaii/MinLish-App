@@ -70,4 +70,47 @@ object EmailSender {
             }
         }
     }
+
+    suspend fun sendReminderEmail(toEmail: String, subject: String, content: String): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            val smtpEmail: String = BuildConfig.SMTP_EMAIL
+            val smtpPassword: String = BuildConfig.SMTP_PASSWORD
+
+            if (smtpEmail.isBlank() || smtpPassword.isBlank()) {
+                val errorException: Exception = Exception("Chưa cấu hình tài khoản SMTP gửi mail trong local.properties!")
+                return@withContext Result.failure(errorException)
+            }
+
+            val props: Properties = Properties()
+            props.put("mail.smtp.host", "smtp.gmail.com")
+            props.put("mail.smtp.socketFactory.port", "465")
+            props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory")
+            props.put("mail.smtp.auth", "true")
+            props.put("mail.smtp.port", "465")
+
+            try {
+                val authenticator: Authenticator = object : Authenticator() {
+                    override fun getPasswordAuthentication(): PasswordAuthentication {
+                        val auth: PasswordAuthentication = PasswordAuthentication(smtpEmail, smtpPassword)
+                        return auth
+                    }
+                }
+                val session: Session = Session.getInstance(props, authenticator)
+
+                val message: MimeMessage = MimeMessage(session)
+                message.setFrom(InternetAddress(smtpEmail, "MinLish App"))
+                message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail))
+                message.setSubject(subject)
+                message.setContent(content, "text/html; charset=utf-8")
+
+                Transport.send(message)
+                return@withContext Result.success(Unit)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                val failMessage: String = "Lỗi gửi Email SMTP: " + (e.message ?: "Không rõ nguyên nhân")
+                val failException: Exception = Exception(failMessage)
+                return@withContext Result.failure(failException)
+            }
+        }
+    }
 }

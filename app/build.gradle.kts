@@ -16,6 +16,7 @@ if (localPropertiesFile.exists()) {
 }
 val smtpEmail = localProperties.getProperty("SMTP_EMAIL") ?: ""
 val smtpPassword = localProperties.getProperty("SMTP_PASSWORD") ?: ""
+val jwtSecret = localProperties.getProperty("JWT_SECRET") ?: "default_secret_key"
 
 android {
     namespace = "vn.edu.hcmute.minlish"
@@ -36,6 +37,7 @@ android {
 
         buildConfigField("String", "SMTP_EMAIL", "\"$smtpEmail\"")
         buildConfigField("String", "SMTP_PASSWORD", "\"$smtpPassword\"")
+        buildConfigField("String", "JWT_SECRET", "\"$jwtSecret\"")
     }
 
     signingConfigs {
@@ -49,7 +51,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

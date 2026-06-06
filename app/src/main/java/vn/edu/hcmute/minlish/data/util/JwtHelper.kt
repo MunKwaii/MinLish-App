@@ -6,7 +6,7 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
 object JwtHelper {
-    private const val SECRET_KEY = "minlish_super_secret_key_for_jwt_token_signing_must_be_long_enough"
+    private val SECRET_KEY = vn.edu.hcmute.minlish.BuildConfig.JWT_SECRET
 
     fun generateToken(email: String, userId: Int): String {
         val headerJson = JSONObject()

@@ -297,6 +297,10 @@ fun FlashcardCard(
         label = "cardFlipAnimation"
     )
 
+    val isFront by remember {
+        derivedStateOf { rotation <= 90f }
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -313,7 +317,7 @@ fun FlashcardCard(
         ),
         border = borderStrokeForCard(isFlipped)
     ) {
-        if (rotation <= 90f) {
+        if (isFront) {
             // FRONT OF CARD
             CardFrontContent(word = word, onSpeak = onSpeak)
         } else {

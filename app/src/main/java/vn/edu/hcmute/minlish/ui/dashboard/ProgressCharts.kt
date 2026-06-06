@@ -70,6 +70,15 @@ fun DailyActivityChart(
     val chartGridLine = MaterialTheme.colorScheme.outlineVariant
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
 
+    val textLayoutResults = remember(data, labelColor) {
+        data.map { item ->
+            textMeasurer.measure(
+                text = item.label,
+                style = TextStyle(fontSize = 10.sp, color = labelColor)
+            )
+        }
+    }
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -163,18 +172,16 @@ fun DailyActivityChart(
                     }
 
                     // Label ngày
-                    val labelText = item.label
-                    val textLayoutResult = textMeasurer.measure(
-                        text = labelText,
-                        style = TextStyle(fontSize = 10.sp, color = labelColor)
-                    )
-                    drawText(
-                        textLayoutResult = textLayoutResult,
-                        topLeft = Offset(
-                            x + barWidth - textLayoutResult.size.width / 2f,
-                            chartHeight + 6.dp.toPx()
+                    val textLayoutResult = textLayoutResults.getOrNull(index)
+                    if (textLayoutResult != null) {
+                        drawText(
+                            textLayoutResult = textLayoutResult,
+                            topLeft = Offset(
+                                x + barWidth - textLayoutResult.size.width / 2f,
+                                chartHeight + 6.dp.toPx()
+                            )
                         )
-                    )
+                    }
                 }
             }
         }
@@ -205,6 +212,25 @@ fun RetentionRateChart(
     val chartBlue = MaterialTheme.colorScheme.primary
     val chartGridLine = MaterialTheme.colorScheme.outlineVariant
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    val gridValues = listOf(0, 25, 50, 75, 100)
+    val gridLabelResults = remember(labelColor) {
+        gridValues.map { value ->
+            textMeasurer.measure(
+                text = "${value}%",
+                style = TextStyle(fontSize = 9.sp, color = labelColor)
+            )
+        }
+    }
+
+    val dayLabelResults = remember(data, labelColor) {
+        data.map { item ->
+            textMeasurer.measure(
+                text = item.label,
+                style = TextStyle(fontSize = 10.sp, color = labelColor)
+            )
+        }
+    }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -243,8 +269,7 @@ fun RetentionRateChart(
                 val maxPercent = 100f
 
                 // Vẽ đường grid ngang + nhãn %
-                val gridValues = listOf(0, 25, 50, 75, 100)
-                for (value in gridValues) {
+                gridValues.forEachIndexed { index, value ->
                     val y = chartHeight * (1f - value / maxPercent)
                     drawLine(
                         color = chartGridLine,
@@ -254,14 +279,13 @@ fun RetentionRateChart(
                     )
 
                     // Nhãn %
-                    val labelResult = textMeasurer.measure(
-                        text = "${value}%",
-                        style = TextStyle(fontSize = 9.sp, color = labelColor)
-                    )
-                    drawText(
-                        textLayoutResult = labelResult,
-                        topLeft = Offset(0f, y - labelResult.size.height / 2f)
-                    )
+                    val labelResult = gridLabelResults.getOrNull(index)
+                    if (labelResult != null) {
+                        drawText(
+                            textLayoutResult = labelResult,
+                            topLeft = Offset(0f, y - labelResult.size.height / 2f)
+                        )
+                    }
                 }
 
                 val pointSpacing = chartWidth / (data.size - 1).coerceAtLeast(1)
@@ -319,17 +343,16 @@ fun RetentionRateChart(
                 // Label ngày bên dưới
                 data.forEachIndexed { index, item ->
                     val x = leftPadding + (usableWidth / (data.size - 1).coerceAtLeast(1)) * index
-                    val labelResult = textMeasurer.measure(
-                        text = item.label,
-                        style = TextStyle(fontSize = 10.sp, color = labelColor)
-                    )
-                    drawText(
-                        textLayoutResult = labelResult,
-                        topLeft = Offset(
-                            x - labelResult.size.width / 2f,
-                            chartHeight + 6.dp.toPx()
+                    val labelResult = dayLabelResults.getOrNull(index)
+                    if (labelResult != null) {
+                        drawText(
+                            textLayoutResult = labelResult,
+                            topLeft = Offset(
+                                x - labelResult.size.width / 2f,
+                                chartHeight + 6.dp.toPx()
+                            )
                         )
-                    )
+                    }
                 }
             }
         }

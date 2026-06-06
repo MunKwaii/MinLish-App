@@ -422,10 +422,10 @@ private fun WordListContent(
     onDeleteWord: (Word) -> Unit
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+         modifier = Modifier.fillMaxSize(),
+         contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 80.dp),
+         verticalArrangement = Arrangement.spacedBy(12.dp)
+     ) {
         items(
             items = words,
             key = { word -> word.wordId }

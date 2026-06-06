@@ -122,7 +122,8 @@ fun MainScreen(
                 }
                 MainTab.Dictionary -> {
                     DictionaryScreen(
-                        viewModel = dictionaryViewModel
+                        viewModel = dictionaryViewModel,
+                        userId = userId
                     )
                 }
                 MainTab.Profile -> {

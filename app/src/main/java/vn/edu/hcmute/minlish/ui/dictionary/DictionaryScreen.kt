@@ -36,13 +36,31 @@ import vn.edu.hcmute.minlish.data.remote.dictionary.DictionaryTranslation
 @Composable
 fun DictionaryScreen(
     viewModel: DictionaryViewModel,
+    userId: Int,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(userId) {
+        viewModel.loadUserData(userId)
+    }
+
+    LaunchedEffect(uiState.saveSuccessMessage, uiState.saveErrorMessage) {
+        uiState.saveSuccessMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearMessages()
+        }
+        uiState.saveErrorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearMessages()
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -254,12 +272,34 @@ fun DictionaryScreen(
                                 .fillMaxWidth()
                                 .padding(16.dp)
                         ) {
-                            Text(
-                                text = result.word ?: "",
-                                fontSize = 32.sp,
-                                fontWeight = FontWeight.Black,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = result.word ?: "",
+                                    fontSize = 32.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                Button(
+                                    onClick = { viewModel.setShowDeckSheet(true) },
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        text = "Lưu vào sổ",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            }
 
                             Spacer(modifier = Modifier.height(8.dp))
 
@@ -275,6 +315,188 @@ fun DictionaryScreen(
                         }
                     }
                 }
+            }
+
+            // BOTTOM SHEET CHỌN BỘ TỪ (DECK)
+            if (uiState.showDeckSheet && uiState.lookupResult != null) {
+                val result = uiState.lookupResult!!
+                ModalBottomSheet(
+                    onDismissRequest = { viewModel.setShowDeckSheet(false) },
+                    sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp)
+                            .navigationBarsPadding()
+                    ) {
+                        Text(
+                            text = "Lưu từ '${result.word}' vào bộ từ:",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        if (uiState.decks.isEmpty()) {
+                            Text(
+                                text = "Bạn chưa có bộ từ vựng nào. Vui lòng tạo bộ từ ở tab 'Bộ từ'.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 16.dp),
+                                textAlign = TextAlign.Center
+                            )
+                        } else {
+                            LazyColumn(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f, fill = false)
+                            ) {
+                                items(uiState.decks) { deck ->
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                viewModel.onDeckSelected(deck.deckId, result)
+                                            },
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                        )
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(16.dp)
+                                        ) {
+                                            Text(
+                                                text = deck.name,
+                                                fontWeight = FontWeight.Bold,
+                                                style = MaterialTheme.typography.bodyLarge
+                                            )
+                                            if (!deck.description.isNullOrBlank()) {
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = deck.description,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    style = MaterialTheme.typography.bodyMedium
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        OutlinedButton(
+                            onClick = { viewModel.setShowDeckSheet(false) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Hủy")
+                        }
+                    }
+                }
+            }
+
+            // HỘP THOẠI XÁC NHẬN GHI ĐÈ KHI TRÙNG LẶP (OVERWRITE COMPARE DIALOG)
+            if (uiState.showOverwriteDialog && uiState.duplicateWordForCompare != null && uiState.lookupResult != null) {
+                val currentWord = uiState.duplicateWordForCompare!!
+                val result = uiState.lookupResult!!
+
+                // Trích xuất các trường thông tin mới để hiển thị so sánh
+                val firstResult = result.results?.firstOrNull()
+                val firstMeaning = firstResult?.meanings?.firstOrNull { !it.definition.isNullOrBlank() }
+                val newPron = firstResult?.pronunciations?.firstOrNull()?.ipa.orEmpty()
+                val newMeaning = firstMeaning?.definition.orEmpty()
+                val newExample = firstMeaning?.example.orEmpty()
+
+                AlertDialog(
+                    onDismissRequest = { viewModel.cancelOverwrite() },
+                    title = {
+                        Text(
+                            text = "Từ vựng đã tồn tại",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    },
+                    text = {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = "Từ '${result.word}' đã tồn tại trong bộ từ này. Bạn có muốn ghi đè thông tin cũ bằng thông tin mới từ từ điển?",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+
+                            // Khối thông tin cũ
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
+                                )
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Text(
+                                        text = "THÔNG TIN CŨ (TRONG BỘ TỪ):",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text("Phiên âm: ${currentWord.pronunciation.ifBlank { "(Trống)" }}", fontSize = 13.sp)
+                                    Text("Định nghĩa: ${currentWord.meaning}", fontSize = 13.sp)
+                                    if (!currentWord.example.isNullOrBlank()) {
+                                        Text("Ví dụ: ${currentWord.example}", fontSize = 13.sp)
+                                    }
+                                }
+                            }
+
+                            // Khối thông tin mới
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                                )
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Text(
+                                        text = "THÔNG TIN MỚI (TỪ ĐIỂN):",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text("Phiên âm: ${newPron.ifBlank { "(Trống)" }}", fontSize = 13.sp)
+                                    Text("Định nghĩa: ${newMeaning}", fontSize = 13.sp)
+                                    if (newExample.isNotBlank()) {
+                                        Text("Ví dụ: ${newExample}", fontSize = 13.sp)
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = { viewModel.confirmOverwrite(result) },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Text("Ghi đè")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { viewModel.cancelOverwrite() }) {
+                            Text("Hủy")
+                        }
+                    }
+                )
             }
         }
     }

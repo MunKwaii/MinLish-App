@@ -136,7 +136,7 @@ class MainActivity : FragmentActivity() {
         val callback: BiometricPrompt.AuthenticationCallback = object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                 super.onAuthenticationError(errorCode, errString)
-                authViewModel.logout()
+                // Giữ nguyên token để người dùng có thể thử lại bằng nút vân tay ở LoginScreen
             }
 
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {

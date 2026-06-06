@@ -22,6 +22,10 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
+import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.Path
@@ -34,6 +38,7 @@ import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import kotlinx.coroutines.launch
 import vn.edu.hcmute.minlish.BuildConfig
+import androidx.compose.ui.draw.clip
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +63,44 @@ fun LoginScreen(
     val showForgotPasswordOtp: Boolean by authViewModel.showForgotPasswordOtp.collectAsState()
     val showResetPasswordScreen: Boolean by authViewModel.showResetPasswordScreen.collectAsState()
     val forgotPasswordEmail: String? by authViewModel.forgotPasswordEmail.collectAsState()
+
+    val app = context.applicationContext as vn.edu.hcmute.minlish.MinLishApplication
+    val settingsManager = remember { app.settingsManager }
+    val sessionManager = remember { app.sessionManager }
+
+    val biometricEnabled by settingsManager.biometricEnabledFlow.collectAsState(initial = false)
+    val hasToken = remember { sessionManager.getToken() != null }
+
+    val showBiometricPrompt = {
+        val activity = context as? androidx.fragment.app.FragmentActivity
+        if (activity != null) {
+            val executor = ContextCompat.getMainExecutor(context)
+            val callback = object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    super.onAuthenticationError(errorCode, errString)
+                }
+
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    super.onAuthenticationSucceeded(result)
+                    authViewModel.autoLogin()
+                }
+
+                override fun onAuthenticationFailed() {
+                    super.onAuthenticationFailed()
+                }
+            }
+
+            val biometricPrompt = BiometricPrompt(activity, executor, callback)
+            val promptInfo = BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Đăng nhập vân tay")
+                .setSubtitle("Xác thực vân tay của bạn để tiếp tục vào MinLish")
+                .setNegativeButtonText("Hủy")
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                .build()
+
+            biometricPrompt.authenticate(promptInfo)
+        }
+    }
 
     // Credential Manager (thay thế GoogleSignInClient)
     val credentialManager = remember { CredentialManager.create(context) }
@@ -263,30 +306,55 @@ fun LoginScreen(
                     }
 
                     // Nút Đăng nhập
-                    Button(
-                        onClick = { authViewModel.login(email.trim(), password) },
-                        enabled = uiState !is AuthUiState.Loading,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        if (uiState is AuthUiState.Loading) {
-                            CircularProgressIndicator(
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.5.dp
-                            )
-                        } else {
-                            Text(
-                                text = "Đăng nhập",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
+                        Button(
+                            onClick = { authViewModel.login(email.trim(), password) },
+                            enabled = uiState !is AuthUiState.Loading,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp)
+                        ) {
+                            if (uiState is AuthUiState.Loading) {
+                                CircularProgressIndicator(
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.5.dp
+                                )
+                            } else {
+                                Text(
+                                    text = "Đăng nhập",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        if (biometricEnabled && hasToken) {
+                            IconButton(
+                                onClick = { showBiometricPrompt() },
+                                colors = IconButtonDefaults.iconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                ),
+                                modifier = Modifier
+                                    .size(50.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Fingerprint,
+                                    contentDescription = "Đăng nhập vân tay",
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
                         }
                     }
 

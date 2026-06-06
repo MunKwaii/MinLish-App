@@ -64,7 +64,7 @@ class LearningViewModel(
                     userId = userId,
                     deckId = if (deckId != null && deckId != -1) deckId else null,
                     newWordsLimit = limit,
-                    currentTimestamp = System.currentTimeMillis()
+                    currentTimestamp = vn.edu.hcmute.minlish.data.util.TimeProvider.currentTimeMillis()
                 )
 
                 // 3. Tải toàn bộ FlashcardProgress của User để tra cứu tiến trình ôn tập
@@ -134,7 +134,7 @@ class LearningViewModel(
             val isCorrect = difficulty != CardDifficulty.AGAIN
 
             progressMutex.withLock {
-                val todayDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(System.currentTimeMillis())
+                val todayDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(vn.edu.hcmute.minlish.data.util.TimeProvider.currentTimeMillis())
                 val todayProgress = progressRepository.getProgressByDate(userId, todayDate)
 
                 val updatedProgress = if (todayProgress == null) {

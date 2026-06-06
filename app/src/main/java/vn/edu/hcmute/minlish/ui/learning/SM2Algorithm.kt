@@ -31,7 +31,7 @@ class SM2Algorithm : SpacedRepetitionStrategy {
 
         // 3. Tính toán thời điểm ôn tập tiếp theo (nextReviewTime bằng mili-giây)
         val oneDayMillis = 24L * 60L * 60L * 1000L
-        val newNextReviewTime = System.currentTimeMillis() + (newInterval * oneDayMillis)
+        val newNextReviewTime = vn.edu.hcmute.minlish.data.util.TimeProvider.currentTimeMillis() + (newInterval * oneDayMillis)
 
         return progress.copy(
             easeFactor = newEF,

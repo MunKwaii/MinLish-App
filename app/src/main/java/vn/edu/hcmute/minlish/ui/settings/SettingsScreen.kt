@@ -58,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import vn.edu.hcmute.minlish.ui.auth.AuthViewModel
 
@@ -441,6 +442,98 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(12.dp))
+
+                        // Giả lập thời gian hệ thống
+                        var simulatedOffset by remember {
+                            mutableStateOf(vn.edu.hcmute.minlish.data.util.TimeProvider.simulatedDaysOffset)
+                        }
+
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f))
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Giả lập thời gian (Test Spaced Repetition)",
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.secondary
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                
+                                val sdf = java.text.SimpleDateFormat("dd/MM/yyyy (EEEE)", java.util.Locale.getDefault())
+                                val simulatedTimeStr = sdf.format(vn.edu.hcmute.minlish.data.util.TimeProvider.currentTimeMillis())
+                                
+                                Text(
+                                    text = "Ngày hiện tại: $simulatedTimeStr",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                if (simulatedOffset > 0) {
+                                    Text(
+                                        text = "(Đang giả lập đi trước $simulatedOffset ngày)",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                } else {
+                                    Text(
+                                        text = "(Đang sử dụng thời gian thực tế)",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                
+                                Spacer(modifier = Modifier.height(12.dp))
+                                
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            if (simulatedOffset > 0) {
+                                                simulatedOffset--
+                                                vn.edu.hcmute.minlish.data.util.TimeProvider.simulatedDaysOffset = simulatedOffset
+                                            }
+                                        },
+                                        enabled = simulatedOffset > 0,
+                                        modifier = Modifier.weight(1f),
+                                        contentPadding = PaddingValues(horizontal = 4.dp)
+                                    ) {
+                                        Text("-1 ngày", fontSize = 12.sp)
+                                    }
+                                    
+                                    Button(
+                                        onClick = {
+                                            simulatedOffset = 0
+                                            vn.edu.hcmute.minlish.data.util.TimeProvider.simulatedDaysOffset = 0
+                                        },
+                                        enabled = simulatedOffset != 0,
+                                        modifier = Modifier.weight(1f),
+                                        contentPadding = PaddingValues(horizontal = 4.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                    ) {
+                                        Text("Reset", fontSize = 12.sp)
+                                    }
+                                    
+                                    OutlinedButton(
+                                        onClick = {
+                                            simulatedOffset++
+                                            vn.edu.hcmute.minlish.data.util.TimeProvider.simulatedDaysOffset = simulatedOffset
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        contentPadding = PaddingValues(horizontal = 4.dp)
+                                    ) {
+                                        Text("+1 ngày", fontSize = 12.sp)
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         val currentUser by authViewModel.currentUser.collectAsState()
 

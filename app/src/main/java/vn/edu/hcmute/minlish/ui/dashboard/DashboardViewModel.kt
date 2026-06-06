@@ -197,7 +197,7 @@ class DashboardViewModel(
                     }
                 }
 
-                val currentTime: Long = System.currentTimeMillis()
+                val currentTime: Long = vn.edu.hcmute.minlish.data.util.TimeProvider.currentTimeMillis()
                 val dueWords: List<Word> = wordDao.getAllWordsDueForReviewByUser(userId, currentTime).first()
                 val dueCount: Int = dueWords.size
 

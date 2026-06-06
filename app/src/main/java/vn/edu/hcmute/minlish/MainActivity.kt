@@ -27,6 +27,8 @@ import vn.edu.hcmute.minlish.ui.navigation.NavGraph
 import vn.edu.hcmute.minlish.ui.theme.MinLishTheme
 import vn.edu.hcmute.minlish.ui.vocabulary.VocabViewModel
 import vn.edu.hcmute.minlish.ui.vocabulary.VocabViewModelFactory
+import vn.edu.hcmute.minlish.ui.dictionary.DictionaryViewModel
+import vn.edu.hcmute.minlish.ui.dictionary.DictionaryViewModelFactory
 
 class MainActivity : FragmentActivity() {
 
@@ -49,6 +51,11 @@ class MainActivity : FragmentActivity() {
     private val dashboardViewModel: DashboardViewModel by viewModels {
         val app: MinLishApplication = application as MinLishApplication
         DashboardViewModelFactory(app.progressRepository, app.database.wordDao())
+    }
+
+    private val dictionaryViewModel: DictionaryViewModel by viewModels {
+        val app = application as MinLishApplication
+        DictionaryViewModelFactory(app.vocabularyRepository)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -111,6 +118,7 @@ class MainActivity : FragmentActivity() {
                         authViewModel = authViewModel,
                         vocabViewModel = vocabViewModel,
                         dashboardViewModel = dashboardViewModel,
+                        dictionaryViewModel = dictionaryViewModel,
                         onToggleTheme = {
                             coroutineScope.launch {
                                 settingsManager.toggleDarkMode(isDarkModePref)

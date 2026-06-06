@@ -140,4 +140,44 @@ class DictionaryApiDataSource {
             results = results
         )
     }
+
+    suspend fun suggestWords(
+        query: String,
+        limit: Int = 5
+    ): List<String> = withContext(Dispatchers.IO) {
+        val trimmed = query.trim()
+        if (trimmed.isEmpty()) return@withContext emptyList<String>()
+
+        val encodedQuery = URLEncoder.encode(trimmed, "UTF-8")
+        val url = URL(
+            "https://dict.minhqnd.com/api/v1/suggest?q=$encodedQuery&limit=$limit"
+        )
+
+        val connection = url.openConnection() as HttpURLConnection
+        connection.requestMethod = "GET"
+        connection.connectTimeout = 5_000
+        connection.readTimeout = 5_000
+
+        try {
+            val responseCode = connection.responseCode
+            if (responseCode !in 200..299) {
+                return@withContext emptyList<String>()
+            }
+
+            val json = connection.inputStream.bufferedReader().use { it.readText() }
+            val root = JSONObject(json)
+            val suggestionsJson = root.optJSONArray("suggestions")
+            val list = mutableListOf<String>()
+            if (suggestionsJson != null) {
+                for (i in 0 until suggestionsJson.length()) {
+                    list.add(suggestionsJson.getString(i))
+                }
+            }
+            list
+        } catch (e: Exception) {
+            emptyList()
+        } finally {
+            connection.disconnect()
+        }
+    }
 }

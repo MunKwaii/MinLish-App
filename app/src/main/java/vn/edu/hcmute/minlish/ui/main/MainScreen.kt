@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -27,10 +28,13 @@ import vn.edu.hcmute.minlish.ui.dashboard.DashboardViewModel
 import vn.edu.hcmute.minlish.ui.settings.SettingsScreen
 import vn.edu.hcmute.minlish.ui.vocabulary.DeckListScreen
 import vn.edu.hcmute.minlish.ui.vocabulary.VocabViewModel
+import vn.edu.hcmute.minlish.ui.dictionary.DictionaryScreen
+import vn.edu.hcmute.minlish.ui.dictionary.DictionaryViewModel
 
 enum class MainTab {
     Home,
     Vocabulary,
+    Dictionary,
     Profile,
     Settings
 }
@@ -40,6 +44,7 @@ fun MainScreen(
     authViewModel: AuthViewModel,
     dashboardViewModel: DashboardViewModel,
     vocabViewModel: VocabViewModel,
+    dictionaryViewModel: DictionaryViewModel,
     onLogout: () -> Unit,
     onNavigateToLearning: () -> Unit,
     onNavigateToWordList: (Int) -> Unit,
@@ -66,6 +71,12 @@ fun MainScreen(
                     onClick = { selectedTab = MainTab.Vocabulary },
                     icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = "Bộ từ") },
                     label = { Text("Bộ từ") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == MainTab.Dictionary,
+                    onClick = { selectedTab = MainTab.Dictionary },
+                    icon = { Icon(Icons.Default.Search, contentDescription = "Từ điển") },
+                    label = { Text("Từ điển") }
                 )
                 NavigationBarItem(
                     selected = selectedTab == MainTab.Profile,
@@ -107,6 +118,11 @@ fun MainScreen(
                         onDeckClick = { deck ->
                             onNavigateToWordList(deck.deckId)
                         }
+                    )
+                }
+                MainTab.Dictionary -> {
+                    DictionaryScreen(
+                        viewModel = dictionaryViewModel
                     )
                 }
                 MainTab.Profile -> {

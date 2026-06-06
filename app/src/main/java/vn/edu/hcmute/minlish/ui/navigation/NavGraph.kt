@@ -28,6 +28,7 @@ import vn.edu.hcmute.minlish.ui.vocabulary.AddWordScreen
 import vn.edu.hcmute.minlish.ui.vocabulary.DeckListScreen
 import vn.edu.hcmute.minlish.ui.vocabulary.VocabViewModel
 import vn.edu.hcmute.minlish.ui.vocabulary.WordListScreen
+import vn.edu.hcmute.minlish.ui.dictionary.DictionaryViewModel
 
 /**
  * Quản lý điều hướng chính trong ứng dụng.
@@ -41,6 +42,7 @@ fun NavGraph(
     authViewModel: AuthViewModel,
     vocabViewModel: VocabViewModel,
     dashboardViewModel: DashboardViewModel,
+    dictionaryViewModel: DictionaryViewModel,
     onToggleTheme: () -> Unit,
     isDarkTheme: Boolean
 ) {
@@ -89,6 +91,7 @@ fun NavGraph(
                 authViewModel = authViewModel,
                 dashboardViewModel = dashboardViewModel,
                 vocabViewModel = vocabViewModel,
+                dictionaryViewModel = dictionaryViewModel,
                 onLogout = {
                     authViewModel.logout()
 

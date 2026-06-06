@@ -41,7 +41,12 @@ class DictionaryViewModel(
     private val historyStack = mutableListOf<DictionaryLookupResult>()
 
     fun onQueryChanged(newQuery: String) {
-        _uiState.update { it.copy(query = newQuery) }
+        _uiState.update { 
+            it.copy(
+                query = newQuery,
+                lookupError = null
+            ) 
+        }
 
         suggestJob?.cancel()
         if (newQuery.trim().isEmpty()) {

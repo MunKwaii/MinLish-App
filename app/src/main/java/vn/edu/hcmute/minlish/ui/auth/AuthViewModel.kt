@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import vn.edu.hcmute.minlish.data.local.entity.User
 import vn.edu.hcmute.minlish.data.repository.UserRepository
 import vn.edu.hcmute.minlish.data.util.EmailSender
+import vn.edu.hcmute.minlish.data.util.GoogleTokenVerifier
 import vn.edu.hcmute.minlish.data.util.JwtHelper
 import vn.edu.hcmute.minlish.data.util.SessionManager
 
@@ -319,6 +320,52 @@ class AuthViewModel(
                         }
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Đăng nhập bằng Google ID Token (Credential Manager).
+     * Verify token trước, sau đó tạo/lấy user từ database.
+     */
+    fun loginWithGoogleToken(idToken: String) {
+        _uiState.value = AuthUiState.Loading
+        viewModelScope.launch {
+            try {
+                // Bước 1: Decode và verify Google ID Token
+                val userInfo = GoogleTokenVerifier.decodeIdToken(idToken)
+                if (userInfo == null) {
+                    _uiState.value = AuthUiState.Error("Token Google không hợp lệ hoặc đã hết hạn!")
+                    return@launch
+                }
+
+                val email = userInfo.email
+                val name = userInfo.name.ifBlank { "Google User" }
+
+                if (email.isBlank()) {
+                    _uiState.value = AuthUiState.Error("Không lấy được email từ tài khoản Google!")
+                    return@launch
+                }
+
+                // Bước 2: Tạo/lấy user từ database (tái sử dụng logic cũ)
+                val result = userRepository.loginWithGoogle(email, name)
+                if (result.isSuccess) {
+                    val user = result.getOrNull()
+                    if (user != null) {
+                        val token = JwtHelper.generateToken(user.email, user.userId)
+                        sessionManager.saveToken(token)
+                        _currentUser.value = user
+                        _uiState.value = AuthUiState.Success(user)
+                    } else {
+                        _uiState.value = AuthUiState.Error("Đăng nhập Google thất bại!")
+                    }
+                } else {
+                    val msg = result.exceptionOrNull()?.message ?: "Đăng nhập Google thất bại!"
+                    _uiState.value = AuthUiState.Error(msg)
+                }
+            } catch (e: Exception) {
+                val errMsg = e.localizedMessage ?: "Đã xảy ra lỗi hệ thống"
+                _uiState.value = AuthUiState.Error(errMsg)
             }
         }
     }

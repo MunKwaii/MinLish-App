@@ -17,6 +17,7 @@ if (localPropertiesFile.exists()) {
 val smtpEmail = localProperties.getProperty("SMTP_EMAIL") ?: ""
 val smtpPassword = localProperties.getProperty("SMTP_PASSWORD") ?: ""
 val jwtSecret = localProperties.getProperty("JWT_SECRET") ?: "default_secret_key"
+val googleWebClientId = localProperties.getProperty("GOOGLE_WEB_CLIENT_ID") ?: ""
 
 android {
     namespace = "vn.edu.hcmute.minlish"
@@ -38,6 +39,7 @@ android {
         buildConfigField("String", "SMTP_EMAIL", "\"$smtpEmail\"")
         buildConfigField("String", "SMTP_PASSWORD", "\"$smtpPassword\"")
         buildConfigField("String", "JWT_SECRET", "\"$jwtSecret\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
     }
 
     signingConfigs {
@@ -110,8 +112,10 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.material.icons.core)
 
-    // GOOGLE SIGN IN
-    implementation(libs.play.services.auth)
+    // CREDENTIAL MANAGER (Google Sign-In via OAuth2)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.google.id)
 
     // JAVAMAIL FOR ANDROID (SMTP EMAIL SENDING)
     implementation("com.sun.mail:android-mail:1.6.7")

@@ -22,15 +22,18 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalContext
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.launch
+import vn.edu.hcmute.minlish.BuildConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,33 +59,43 @@ fun LoginScreen(
     val showResetPasswordScreen: Boolean by authViewModel.showResetPasswordScreen.collectAsState()
     val forgotPasswordEmail: String? by authViewModel.forgotPasswordEmail.collectAsState()
 
-    // Cấu hình Google Sign-In
-    val gso = remember {
-        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken("710966620041-dbpou1jis4h9ucihsi6kpcc8da8sp18i.apps.googleusercontent.com") // Web Client ID
-            .requestEmail()
-            .build()
-    }
-    val googleSignInClient = remember {
-        GoogleSignIn.getClient(context, gso)
-    }
+    // Credential Manager (thay thế GoogleSignInClient)
+    val credentialManager = remember { CredentialManager.create(context) }
+    val coroutineScope = rememberCoroutineScope()
 
-    // Xóa bộ nhớ đệm Google Sign-In khi vào màn hình Đăng nhập để lần sau người dùng có thể chọn tài khoản khác
-    LaunchedEffect(Unit) {
-        googleSignInClient.signOut()
-    }
+    val handleGoogleSignIn: () -> Unit = {
+        coroutineScope.launch {
+            try {
+                val googleIdOption = GetGoogleIdOption.Builder()
+                    .setServerClientId(BuildConfig.GOOGLE_WEB_CLIENT_ID)
+                    .setFilterByAuthorizedAccounts(false) // Cho phép chọn bất kỳ tài khoản nào
+                    .setAutoSelectEnabled(false) // Luôn hiện UI chọn tài khoản
+                    .build()
 
-    val googleSignInLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-        try {
-            val account = task.getResult(ApiException::class.java)
-            val userEmail = account?.email ?: ""
-            val displayName = account?.displayName ?: "Google User"
-            authViewModel.loginWithGoogle(userEmail, displayName)
-        } catch (e: ApiException) {
-            authViewModel.clearError()
+                val request = GetCredentialRequest.Builder()
+                    .addCredentialOption(googleIdOption)
+                    .build()
+
+                val result = credentialManager.getCredential(
+                    request = request,
+                    context = context as android.app.Activity
+                )
+
+                // Xử lý kết quả
+                val credential = result.credential
+                if (credential is CustomCredential &&
+                    credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+                ) {
+                    val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                    val idToken = googleIdTokenCredential.idToken
+                    authViewModel.loginWithGoogleToken(idToken)
+                } else {
+                    authViewModel.clearError()
+                }
+            } catch (e: GetCredentialException) {
+                // User hủy chọn tài khoản hoặc lỗi khác
+                authViewModel.clearError()
+            }
         }
     }
 
@@ -299,8 +312,7 @@ fun LoginScreen(
                     // Nút Đăng nhập bằng Google
                     OutlinedButton(
                         onClick = {
-                            val signInIntent = googleSignInClient.signInIntent
-                            googleSignInLauncher.launch(signInIntent)
+                            handleGoogleSignIn()
                         },
                         enabled = uiState !is AuthUiState.Loading,
                         shape = RoundedCornerShape(12.dp),

@@ -19,3 +19,16 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# ---- Google Credential Manager ----
+-if class androidx.credentials.CredentialManager
+-keep class androidx.credentials.playservices.** { *; }
+
+# ---- Google ID (Google Sign-In via Credential Manager) ----
+-keep class com.google.android.libraries.identity.googleid.** { *; }
+
+# ---- Room Database Entities ----
+-keep class vn.edu.hcmute.minlish.data.local.entity.** { *; }
+
+# ---- Keep BuildConfig fields ----
+-keep class vn.edu.hcmute.minlish.BuildConfig { *; }

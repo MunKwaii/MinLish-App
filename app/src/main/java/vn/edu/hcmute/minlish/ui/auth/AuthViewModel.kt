@@ -93,46 +93,6 @@ class AuthViewModel(
         }
     }
 
-    fun loginWithGoogle(email: String, name: String) {
-        if (email.isBlank()) {
-            _uiState.value = AuthUiState.Error("Tài khoản Google không hợp lệ!")
-            return
-        }
-
-        _uiState.value = AuthUiState.Loading
-        viewModelScope.launch {
-            try {
-                val result = userRepository.loginWithGoogle(email, name)
-                if (result.isSuccess) {
-                    val user = result.getOrNull()
-                    if (user != null) {
-                        val token = JwtHelper.generateToken(user.email, user.userId)
-                        sessionManager.saveToken(token)
-                        _currentUser.value = user
-                        _uiState.value = AuthUiState.Success(user)
-                    } else {
-                        _uiState.value = AuthUiState.Error("Đăng nhập Google thất bại!")
-                    }
-                } else {
-                    val exception = result.exceptionOrNull()
-                    val msg = exception?.message
-                    if (msg != null) {
-                        _uiState.value = AuthUiState.Error(msg)
-                    } else {
-                        _uiState.value = AuthUiState.Error("Đăng nhập Google thất bại!")
-                    }
-                }
-            } catch (e: Exception) {
-                val errMsg = e.localizedMessage
-                if (errMsg != null) {
-                    _uiState.value = AuthUiState.Error(errMsg)
-                } else {
-                    _uiState.value = AuthUiState.Error("Đã xảy ra lỗi hệ thống")
-                }
-            }
-        }
-    }
-
     fun register(
         email: String,
         name: String,

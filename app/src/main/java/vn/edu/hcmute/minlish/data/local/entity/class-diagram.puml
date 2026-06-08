@@ -17,9 +17,11 @@ entity "users" as users {
     * passwordHash : TEXT
     * learningGoal : TEXT
     * level : TEXT
+    * userType : TEXT
     * totalWordsLearned : INTEGER
     * currentStreak : INTEGER
     * accuracyRate : REAL (Float)
+    avatarPath : TEXT (nullable)
 }
 
 entity "decks" as decks {

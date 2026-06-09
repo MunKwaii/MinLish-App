@@ -223,19 +223,6 @@ fun DashboardScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                        icon = Icons.Default.LocalFireDepartment,
-                        tint = MaterialTheme.colorScheme.tertiary
-                    )
-
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        title = "Accuracy",
-                        value = "${dashboardState.accuracyPercent.toInt()}%",
-                        icon = Icons.Default.CheckCircle,
-                        tint = MaterialTheme.colorScheme.secondary
-                // ============================================
-                // SECTION 5: Quick actions
-                // ============================================
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()

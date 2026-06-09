@@ -223,35 +223,6 @@ fun DashboardScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // ============================================
-                // SECTION 2: Thống kê tổng hợp (3 stat cards)
-                // ============================================
-                Text(
-                    text = "Thống Kê Học Tập",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.align(Alignment.Start)
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        title = "Từ đã học",
-                        value = "${dashboardState.totalWordsLearned}",
-                        icon = Icons.Default.School,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        title = "Streak",
-                        value = "${dashboardState.currentStreak} ngày",
                         icon = Icons.Default.LocalFireDepartment,
                         tint = MaterialTheme.colorScheme.tertiary
                     )
@@ -262,32 +233,6 @@ fun DashboardScreen(
                         value = "${dashboardState.accuracyPercent.toInt()}%",
                         icon = Icons.Default.CheckCircle,
                         tint = MaterialTheme.colorScheme.secondary
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // ============================================
-                // SECTION 3: Card Maturity (Anki-style)
-                // ============================================
-                CardMaturityChart(maturity = dashboardState.cardMaturity)
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // ============================================
-                // SECTION 4: Biểu đồ hoạt động hàng ngày
-                // ============================================
-                DailyActivityChart(data = dashboardState.dailyActivity)
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // ============================================
-                // SECTION 4: Biểu đồ Retention Rate
-                // ============================================
-                RetentionRateChart(data = dashboardState.retentionData)
-
-                Spacer(modifier = Modifier.height(16.dp))
-
                 // ============================================
                 // SECTION 5: Quick actions
                 // ============================================
@@ -356,7 +301,72 @@ fun DashboardScreen(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // ============================================
+                // SECTION 2: Thống kê tổng hợp (3 stat cards)
+                // ============================================
+                Text(
+                    text = "Thống Kê Học Tập",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+
                 Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    StatCard(
+                        modifier = Modifier.weight(1f),
+                        title = "Từ đã học",
+                        value = "${dashboardState.totalWordsLearned}",
+                        icon = Icons.Default.School,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+
+                    StatCard(
+                        modifier = Modifier.weight(1f),
+                        title = "Streak",
+                        value = "${dashboardState.currentStreak} ngày",
+                        icon = Icons.Default.LocalFireDepartment,
+                        tint = MaterialTheme.colorScheme.tertiary
+                    )
+
+                    StatCard(
+                        modifier = Modifier.weight(1f),
+                        title = "Accuracy",
+                        value = "${dashboardState.accuracyPercent.toInt()}%",
+                        icon = Icons.Default.CheckCircle,
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // ============================================
+                // SECTION 3: Card Maturity (Anki-style)
+                // ============================================
+                CardMaturityChart(maturity = dashboardState.cardMaturity)
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // ============================================
+                // SECTION 4: Biểu đồ hoạt động hàng ngày
+                // ============================================
+                DailyActivityChart(data = dashboardState.dailyActivity)
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // ============================================
+                // SECTION 4: Biểu đồ Retention Rate
+                // ============================================
+                RetentionRateChart(data = dashboardState.retentionData)
+
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
                     onClick = onNavigateToVocabulary,
